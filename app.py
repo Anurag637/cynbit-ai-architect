@@ -149,8 +149,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 
-# Initialize Core Engines
-@st.cache_resource
+# Initialize Core Engines (instant initialization without st.cache_resource prevents stale class definition retention in Cloud deployments)
 def get_engines():
     analyzer = AspectSentimentAnalyzer()
     crisis_detector = CrisisDetector()
@@ -566,17 +565,32 @@ with tab2:
             analysis = analyzer.analyze(input_text, in_rating)
             crisis = crisis_detector.evaluate(input_text, in_rating)
             persona_enum = BrandPersona(selected_persona)
-            resp = response_gen.generate(
-                customer_name=in_name,
-                branch_name=in_branch,
-                analysis=analysis,
-                crisis=crisis,
-                persona=persona_enum,
-                use_llm_if_available=use_llm_opt,
-                custom_gemini_key=user_gemini_key if user_gemini_key else None,
-                custom_hf_key=user_hf_key if user_hf_key else None,
-                hf_model=selected_hf_model
-            )
+            try:
+                resp = response_gen.generate(
+                    customer_name=in_name,
+                    branch_name=in_branch,
+                    analysis=analysis,
+                    crisis=crisis,
+                    persona=persona_enum,
+                    use_llm_if_available=use_llm_opt,
+                    custom_gemini_key=user_gemini_key if user_gemini_key else None,
+                    custom_hf_key=user_hf_key if user_hf_key else None,
+                    hf_model=selected_hf_model
+                )
+            except TypeError:
+                # Defensive fallback: if Streamlit Cloud worker kept a stale engine instance in memory
+                fresh_gen = ResponseGenerator()
+                resp = fresh_gen.generate(
+                    customer_name=in_name,
+                    branch_name=in_branch,
+                    analysis=analysis,
+                    crisis=crisis,
+                    persona=persona_enum,
+                    use_llm_if_available=use_llm_opt,
+                    custom_gemini_key=user_gemini_key if user_gemini_key else None,
+                    custom_hf_key=user_hf_key if user_hf_key else None,
+                    hf_model=selected_hf_model
+                )
 
             st.markdown("---")
 

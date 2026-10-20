@@ -206,7 +206,8 @@ class ResponseGenerator:
         use_llm_if_available: bool = True,
         custom_gemini_key: Optional[str] = None,
         custom_hf_key: Optional[str] = None,
-        hf_model: Optional[str] = None
+        hf_model: Optional[str] = None,
+        **kwargs
     ) -> GeneratedResponse:
         first_name = customer_name.split()[0] if customer_name else "Valued Guest"
         ticket_id = None
