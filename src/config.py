@@ -22,26 +22,67 @@ SUPPORT_EMAIL: str = os.getenv("SUPPORT_EMAIL", "care@cynbit.in")
 ESCALATION_EMAIL: str = os.getenv("ESCALATION_EMAIL", "executive-care@cynbit.in")
 SUPPORT_PHONE: str = os.getenv("SUPPORT_PHONE", "+91-89479-62667")
 
-# Optional LLM API Keys (read from environment or Streamlit Cloud secrets)
-GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
-OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
-HUGGINGFACE_API_KEY: str = os.getenv("HUGGINGFACE_API_KEY", "") or os.getenv("HF_TOKEN", "")
-HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
+def get_gemini_api_key() -> str:
+    """Dynamically resolves Google Gemini API key from Streamlit secrets or environment."""
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            for k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY", "google_api_key", "GEMINI_KEY", "gemini_key"]:
+                if k in st.secrets and st.secrets[k]:
+                    return str(st.secrets[k]).strip().strip('"\'')
+            if "gemini" in st.secrets and isinstance(st.secrets["gemini"], dict):
+                for k in ["api_key", "key"]:
+                    if k in st.secrets["gemini"] and st.secrets["gemini"][k]:
+                        return str(st.secrets["gemini"][k]).strip().strip('"\'')
+    except Exception:
+        pass
+    for k in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY"]:
+        v = os.getenv(k)
+        if v:
+            return v.strip().strip('"\'')
+    return ""
 
-try:
-    import streamlit as st
-    if hasattr(st, "secrets"):
-        if not GEMINI_API_KEY and "GEMINI_API_KEY" in st.secrets:
-            GEMINI_API_KEY = str(st.secrets["GEMINI_API_KEY"])
-        if not OPENAI_API_KEY and "OPENAI_API_KEY" in st.secrets:
-            OPENAI_API_KEY = str(st.secrets["OPENAI_API_KEY"])
-        if not HUGGINGFACE_API_KEY:
-            if "HUGGINGFACE_API_KEY" in st.secrets:
-                HUGGINGFACE_API_KEY = str(st.secrets["HUGGINGFACE_API_KEY"])
-            elif "HF_TOKEN" in st.secrets:
-                HUGGINGFACE_API_KEY = str(st.secrets["HF_TOKEN"])
-except Exception:
-    pass
+
+def get_huggingface_api_key() -> str:
+    """Dynamically resolves Hugging Face API token from Streamlit secrets or environment."""
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            for k in ["HUGGINGFACE_API_KEY", "huggingface_api_key", "HF_TOKEN", "hf_token", "HUGGING_FACE_HUB_TOKEN", "hugging_face_hub_token"]:
+                if k in st.secrets and st.secrets[k]:
+                    return str(st.secrets[k]).strip().strip('"\'')
+            if "huggingface" in st.secrets and isinstance(st.secrets["huggingface"], dict):
+                for k in ["api_key", "token"]:
+                    if k in st.secrets["huggingface"] and st.secrets["huggingface"][k]:
+                        return str(st.secrets["huggingface"][k]).strip().strip('"\'')
+    except Exception:
+        pass
+    for k in ["HUGGINGFACE_API_KEY", "HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"]:
+        v = os.getenv(k)
+        if v:
+            return v.strip().strip('"\'')
+    return ""
+
+
+def get_openai_api_key() -> str:
+    """Dynamically resolves OpenAI API key from Streamlit secrets or environment."""
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets"):
+            for k in ["OPENAI_API_KEY", "openai_api_key"]:
+                if k in st.secrets and st.secrets[k]:
+                    return str(st.secrets[k]).strip().strip('"\'')
+    except Exception:
+        pass
+    v = os.getenv("OPENAI_API_KEY")
+    return v.strip().strip('"\'') if v else ""
+
+
+# Optional LLM API Keys (read from environment or Streamlit Cloud secrets)
+GEMINI_API_KEY: str = get_gemini_api_key()
+OPENAI_API_KEY: str = get_openai_api_key()
+HUGGINGFACE_API_KEY: str = get_huggingface_api_key()
+HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "meta-llama/Llama-3.1-8B-Instruct")
 
 
 class Sentiment(str, Enum):

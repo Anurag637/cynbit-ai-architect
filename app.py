@@ -30,7 +30,10 @@ from src.config import (
     GEMINI_API_KEY,
     OPENAI_API_KEY,
     HUGGINGFACE_API_KEY,
-    HUGGINGFACE_MODEL
+    HUGGINGFACE_MODEL,
+    get_gemini_api_key,
+    get_huggingface_api_key,
+    get_openai_api_key
 )
 
 # Page Configuration
@@ -523,58 +526,21 @@ with tab2:
             index=0
         )
     with c_opt2:
-        has_env_key = bool(HUGGINGFACE_API_KEY or GEMINI_API_KEY or OPENAI_API_KEY)
+        gemini_k = get_gemini_api_key()
+        hf_k = get_huggingface_api_key()
+        openai_k = get_openai_api_key()
+        has_secret_key = bool(gemini_k or hf_k or openai_k)
+
         use_llm_opt = st.checkbox(
-            "Enable Optional LLM Generation (Hugging Face Free / Gemini)",
-            value=has_env_key,
-            help="If unchecked or if no key is provided, Revio uses safe offline deterministic policy templates."
+            "Enable Optional LLM Generation (Gemini / Hugging Face)",
+            value=has_secret_key,
+            help="If checked, Revio generates responses using your configured API key in Streamlit Secrets. If unchecked, safe offline policy templates are used."
         )
-        if has_env_key:
-            st.caption("🟢 **API Key Active:** Connected via environment / Streamlit Secrets.")
+        if has_secret_key:
+            active_provider = "Google Gemini" if gemini_k else ("Hugging Face" if hf_k else "OpenAI")
+            st.caption(f"🟢 **Connected via Streamlit Secrets:** Active Provider: **{active_provider}**.")
         else:
-            st.caption("ℹ️ **Offline Mode:** No API Key detected. Using safe deterministic policy templates (100% Free / Offline).")
-
-    user_hf_key = None
-    user_gemini_key = None
-    selected_hf_model = HUGGINGFACE_MODEL
-
-    if use_llm_opt:
-        provider_mode = st.radio(
-            "Select AI Provider:",
-            ["✨ Google Gemini (100% Free Forever, No Credit Card Required)", "🤗 Hugging Face Serverless"],
-            index=0,
-            horizontal=True
-        )
-        if "Gemini" in provider_mode:
-            user_gemini_key = st.text_input(
-                "🔑 Paste Your Free Google Gemini API Key (starts with AIzaSy...):",
-                type="password",
-                placeholder="Paste your free Gemini key: AIzaSyxxxxxxxxxxxxxxxxxxxxx",
-                help="Get a 100% free Gemini API key with 1,500 requests/day at https://aistudio.google.com/app/apikey (Zero cost, no credit card required)."
-            )
-            st.caption("🚀 **Recommended:** Google Gemini gives 1,500 requests/day for 100% free forever without payment credits. [Get your free key in 30 seconds at Google AI Studio](https://aistudio.google.com/app/apikey).")
-        else:
-            llm_col1, llm_col2 = st.columns([7, 5])
-            with llm_col1:
-                user_hf_key = st.text_input(
-                    "🤗 Paste Your Hugging Face Token (starts with hf_...):",
-                    type="password",
-                    placeholder="Paste your active hf_xxxxxxxx token here...",
-                    help="Hugging Face User Access Token. Note: HF serverless router requires pre-paid credits on some accounts."
-                )
-            with llm_col2:
-                selected_hf_model = st.selectbox(
-                    "Free Open Model:",
-                    [
-                        "meta-llama/Llama-3.1-8B-Instruct",
-                        "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-                        "Qwen/Qwen2.5-Coder-7B-Instruct",
-                        "google/gemma-3-4b-it"
-                    ],
-                    index=0,
-                    help="Meta Llama 3.1 8B & DeepSeek R1 are the top verified free models hosted on Hugging Face Serverless Router."
-                )
-            st.caption("ℹ️ *Note: If Hugging Face returns 'No remaining credits', switch to the Google Gemini option above (100% free forever without credits).*")
+            st.caption("ℹ️ **Deterministic Mode:** Using safe offline templates (100% Free / Offline). To enable live AI, add `GEMINI_API_KEY = \"AIzaSy...\"` to **Manage app > Settings > Secrets**.")
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):
@@ -588,10 +554,7 @@ with tab2:
                     analysis=analysis,
                     crisis=crisis,
                     persona=persona_enum,
-                    use_llm_if_available=use_llm_opt,
-                    custom_gemini_key=user_gemini_key if user_gemini_key else None,
-                    custom_hf_key=user_hf_key if user_hf_key else None,
-                    hf_model=selected_hf_model
+                    use_llm_if_available=use_llm_opt
                 )
             except TypeError:
                 # Defensive fallback: if Streamlit Cloud worker kept a stale engine instance in memory
@@ -602,10 +565,7 @@ with tab2:
                     analysis=analysis,
                     crisis=crisis,
                     persona=persona_enum,
-                    use_llm_if_available=use_llm_opt,
-                    custom_gemini_key=user_gemini_key if user_gemini_key else None,
-                    custom_hf_key=user_hf_key if user_hf_key else None,
-                    hf_model=selected_hf_model
+                    use_llm_if_available=use_llm_opt
                 )
 
             st.markdown("---")
@@ -689,13 +649,12 @@ with tab2:
                 """, unsafe_allow_html=True)
 
                 if getattr(resp, "llm_error", None):
-                    err_text = str(resp.llm_error)
-                    if "Gemini" in err_text:
-                        tip = "💡 **How to resolve:** Ensure your Google Gemini key (starts with `AIzaSy...`) is active at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey), then click **'🚀 Analyze & Generate Governed Response'**."
-                    elif "credits" in err_text.lower():
-                        tip = "💡 **How to resolve:** Hugging Face serverless router requires pre-paid credits. Please switch to the **Google Gemini** option above for 100% free generation without credits!"
-                    else:
-                        tip = "💡 **How to resolve:** Check that your API key is correctly pasted in the box above, then click **'🚀 Analyze & Generate Governed Response'**."
+                    tip = (
+                        "💡 **How to resolve:** Open your Streamlit dashboard ➔ **Manage app** ➔ **Settings** ➔ **Secrets**, "
+                        "and add your free Google Gemini API key:<br>"
+                        "<code>GEMINI_API_KEY = \"AIzaSyYourActualKeyHere\"</code><br>"
+                        "Get your 100% free key in 30 seconds at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey) (1,500 requests/day, no credit card required)."
+                    )
                     st.warning(f"⚠️ **LLM Fallback Activated:** {resp.llm_error}\n\n{tip}")
                 elif any(k in resp.generation_source for k in ["Hugging Face", "Gemini", "OpenAI"]):
                     st.success(f"✨ **Live AI Generation Active:** Drafted directly via `{resp.generation_source}`.")

@@ -30,7 +30,10 @@ from src.config import (
     GEMINI_API_KEY,
     OPENAI_API_KEY,
     HUGGINGFACE_API_KEY,
-    HUGGINGFACE_MODEL
+    HUGGINGFACE_MODEL,
+    get_gemini_api_key,
+    get_huggingface_api_key,
+    get_openai_api_key
 )
 from src.analyzer import ReviewAnalysis
 from src.crisis_detector import CrisisEvaluation
@@ -102,13 +105,20 @@ class ResponseGenerator:
         prompt: str,
         system_instruction: str,
         api_key: str
-    ) -> Tuple[Optional[str], Optional[str]]:
-        """Calls Google Gemini REST endpoint directly without heavy third-party agent frameworks."""
-        candidate_models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash-latest"]
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
+        """Calls Google Gemini REST endpoint directly across active versions and models."""
+        clean_key = api_key.strip().strip('"\'')
+        candidate_endpoints = [
+            ("v1beta", "gemini-2.0-flash"),
+            ("v1beta", "gemini-1.5-flash"),
+            ("v1", "gemini-1.5-flash"),
+            ("v1beta", "gemini-2.0-flash-lite"),
+            ("v1beta", "gemini-1.5-pro")
+        ]
         last_error = None
-        for model_id in candidate_models:
+        for api_version, model_id in candidate_endpoints:
             try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={api_key}"
+                url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_id}:generateContent?key={clean_key}"
                 headers = {"Content-Type": "application/json"}
                 payload = {
                     "contents": [
@@ -125,17 +135,17 @@ class ResponseGenerator:
                         "maxOutputTokens": 300
                     }
                 }
-                resp = requests.post(url, headers=headers, json=payload, timeout=8)
+                resp = requests.post(url, headers=headers, json=payload, timeout=10)
                 if resp.status_code == 200:
                     data = resp.json()
                     candidates = data.get("candidates", [])
                     if candidates:
                         parts = candidates[0].get("content", {}).get("parts", [])
                         if parts:
-                            return parts[0].get("text", "").strip(), None
-                    return None, "Gemini returned empty candidate output"
+                            return parts[0].get("text", "").strip(), None, model_id
+                    return None, "Gemini returned empty candidate output", None
                 elif resp.status_code == 404:
-                    last_error = f"Gemini model {model_id} not available"
+                    last_error = f"Gemini model {model_id} ({api_version}) not available"
                     continue
                 else:
                     try:
@@ -143,10 +153,10 @@ class ResponseGenerator:
                         err_msg = err_json.get("error", {}).get("message", f"HTTP {resp.status_code}")
                     except Exception:
                         err_msg = f"HTTP {resp.status_code}"
-                    return None, f"Gemini error ({err_msg})"
+                    return None, f"Gemini error ({err_msg})", None
             except Exception as e:
                 last_error = f"Gemini connection error: {str(e)}"
-        return None, last_error or "Gemini API could not find an available model"
+        return None, last_error or "Gemini API could not find an available model", None
 
     def _call_openai_llm(
         self,
@@ -155,11 +165,12 @@ class ResponseGenerator:
         api_key: str
     ) -> Tuple[Optional[str], Optional[str]]:
         """Calls OpenAI chat completions endpoint."""
+        clean_key = api_key.strip().strip('"\'')
         try:
             url = "https://api.openai.com/v1/chat/completions"
             headers = {
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
+                "Authorization": f"Bearer {clean_key}"
             }
             payload = {
                 "model": "gpt-4o-mini",
@@ -193,41 +204,59 @@ class ResponseGenerator:
         system_instruction: str,
         api_key: str,
         model_id: str = HUGGINGFACE_MODEL
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
         """Calls Hugging Face Serverless Inference Router (OpenAI-compatible chat completions)."""
-        try:
-            url = "https://router.huggingface.co/v1/chat/completions"
-            headers = {
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {api_key}"
-            }
-            payload = {
-                "model": model_id,
-                "messages": [
-                    {"role": "system", "content": system_instruction},
-                    {"role": "user", "content": prompt}
-                ],
-                "temperature": 0.3,
-                "max_tokens": 300
-            }
-            resp = requests.post(url, headers=headers, json=payload, timeout=12)
-            if resp.status_code == 200:
-                data = resp.json()
-                choices = data.get("choices", [])
-                if choices:
-                    return choices[0].get("message", {}).get("content", "").strip(), None
-                return None, "Hugging Face returned empty choices"
-            else:
-                try:
-                    err_json = resp.json()
-                    err_msg = err_json.get("error", f"HTTP {resp.status_code}")
-                    if isinstance(err_msg, dict):
-                        err_msg = err_msg.get("message", str(err_msg))
-                except Exception:
-                    err_msg = f"HTTP {resp.status_code}"
-                return None, f"Hugging Face error ({err_msg})"
-        except Exception as e:
-            return None, f"Hugging Face connection error: {str(e)}"
+        clean_key = api_key.strip().strip('"\'')
+        candidate_models = [
+            model_id or "meta-llama/Llama-3.1-8B-Instruct",
+            "meta-llama/Llama-3.1-8B-Instruct",
+            "mistralai/Mistral-7B-Instruct-v0.3"
+        ]
+        unique_models = []
+        for m in candidate_models:
+            if m and m not in unique_models:
+                unique_models.append(m)
+
+        last_error = None
+        for current_model in unique_models:
+            try:
+                url = "https://router.huggingface.co/v1/chat/completions"
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {clean_key}"
+                }
+                payload = {
+                    "model": current_model,
+                    "messages": [
+                        {"role": "system", "content": system_instruction},
+                        {"role": "user", "content": prompt}
+                    ],
+                    "temperature": 0.3,
+                    "max_tokens": 300
+                }
+                resp = requests.post(url, headers=headers, json=payload, timeout=12)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    choices = data.get("choices", [])
+                    if choices:
+                        return choices[0].get("message", {}).get("content", "").strip(), None, current_model
+                    return None, "Hugging Face returned empty choices", None
+                else:
+                    try:
+                        err_json = resp.json()
+                        err_msg = err_json.get("error", f"HTTP {resp.status_code}")
+                        if isinstance(err_msg, dict):
+                            err_msg = err_msg.get("message", str(err_msg))
+                    except Exception:
+                        err_msg = f"HTTP {resp.status_code}"
+                    
+                    if "not supported" in str(err_msg).lower():
+                        last_error = f"Hugging Face error ({err_msg})"
+                        continue
+                    return None, f"Hugging Face error ({err_msg})", None
+            except Exception as e:
+                last_error = f"Hugging Face connection error: {str(e)}"
+        return None, last_error or "Hugging Face router unavailable", None
 
     def generate(
         self,
@@ -310,49 +339,41 @@ class ResponseGenerator:
                 "Please draft the official reply."
             )
 
-            if custom_gemini_key:
-                # 1. User explicitly provided custom Gemini API key
-                llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, custom_gemini_key)
+            active_gemini_key = (custom_gemini_key or get_gemini_api_key() or GEMINI_API_KEY).strip().strip('"\'')
+            active_hf_key = (custom_hf_key or get_huggingface_api_key() or HUGGINGFACE_API_KEY).strip().strip('"\'')
+            active_openai_key = (get_openai_api_key() or OPENAI_API_KEY).strip().strip('"\'')
+
+            # 1. Try Google Gemini (Fastest, highest quality, 1,500 free requests/day)
+            if active_gemini_key:
+                llm_response, err, model_used = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
                 if llm_response:
-                    generation_source = "Google Gemini 2.0 Flash (Grounded LLM)"
+                    generation_source = f"Google Gemini ({model_used} - Grounded LLM)"
                     llm_error = None
                 else:
                     llm_error = err
-            elif custom_hf_key:
-                # 2. User explicitly provided custom Hugging Face key
+
+            # 2. Try Hugging Face (Open Model Inference)
+            if not llm_response and active_hf_key:
                 selected_hf_model = hf_model or HUGGINGFACE_MODEL or "meta-llama/Llama-3.1-8B-Instruct"
-                llm_response, err = self._call_huggingface_llm(user_prompt, system_instruction, custom_hf_key, selected_hf_model)
+                llm_response, err, hf_used = self._call_huggingface_llm(user_prompt, system_instruction, active_hf_key, selected_hf_model)
                 if llm_response:
-                    generation_source = f"Hugging Face Free Inference ({selected_hf_model})"
+                    generation_source = f"Hugging Face Free Inference ({hf_used})"
                     llm_error = None
                 else:
-                    llm_error = err
-            else:
-                # 3. Environment / Streamlit Secrets fallback (Gemini -> Hugging Face -> OpenAI)
-                if GEMINI_API_KEY:
-                    llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, GEMINI_API_KEY)
-                    if llm_response:
-                        generation_source = "Google Gemini 2.0 Flash (Grounded LLM)"
-                        llm_error = None
-                    else:
-                        llm_error = err
+                    llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
 
-                if not llm_response and HUGGINGFACE_API_KEY:
-                    selected_hf_model = hf_model or HUGGINGFACE_MODEL or "meta-llama/Llama-3.1-8B-Instruct"
-                    llm_response, err = self._call_huggingface_llm(user_prompt, system_instruction, HUGGINGFACE_API_KEY, selected_hf_model)
-                    if llm_response:
-                        generation_source = f"Hugging Face Free Inference ({selected_hf_model})"
-                        llm_error = None
-                    else:
-                        llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
+            # 3. Try OpenAI
+            if not llm_response and active_openai_key:
+                llm_response, err = self._call_openai_llm(user_prompt, system_instruction, active_openai_key)
+                if llm_response:
+                    generation_source = "OpenAI GPT-4o-mini (Grounded LLM)"
+                    llm_error = None
+                else:
+                    llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
 
-                if not llm_response and OPENAI_API_KEY:
-                    llm_response, err = self._call_openai_llm(user_prompt, system_instruction, OPENAI_API_KEY)
-                    if llm_response:
-                        generation_source = "OpenAI GPT-4o-mini (Grounded LLM)"
-                        llm_error = None
-                    else:
-                        llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
+            # If user enabled LLM, but no key was configured anywhere
+            if not active_gemini_key and not active_hf_key and not active_openai_key:
+                llm_error = "No API key configured in Streamlit Secrets. Please set GEMINI_API_KEY in Streamlit Cloud: Manage app > Settings > Secrets."
 
         # -------------------------------------------------------------
         # Deterministic Safe Template Fallback
