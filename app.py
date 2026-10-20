@@ -217,21 +217,7 @@ with st.sidebar:
             active_raw_reviews = load_dataset()
             is_dataset_synthetic = True
 
-    st.markdown("---")
-    st.markdown("### ⚙️ System Configuration")
-    st.caption("Configurable brand parameters & environment variables.")
-    st.text(f"Brand: {BRAND_NAME}")
-    st.text(f"Support Email: {SUPPORT_EMAIL}")
-    st.text(f"Phone: {SUPPORT_PHONE}")
 
-    has_gemini = bool(GEMINI_API_KEY)
-    has_openai = bool(OPENAI_API_KEY)
-    if has_gemini:
-        st.success("🟢 Gemini API Key detected in .env")
-    elif has_openai:
-        st.success("🟢 OpenAI API Key detected in .env")
-    else:
-        st.info("⚪ Operating in 100% Offline Fallback Mode (Deterministic Policy Engine)")
 
 
 # Process active dataset
