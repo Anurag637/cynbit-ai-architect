@@ -538,13 +538,14 @@ with tab2:
     user_gemini_key = None
     selected_hf_model = HUGGINGFACE_MODEL
 
-    if use_llm_opt and not has_env_key:
+    if use_llm_opt:
         llm_col1, llm_col2 = st.columns([7, 5])
         with llm_col1:
+            placeholder_text = "Using Secrets (or paste custom hf_... to override)" if has_env_key else "hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             user_hf_key = st.text_input(
                 "🤗 Hugging Face Free Token (starts with hf_...):",
                 type="password",
-                placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                placeholder=placeholder_text,
                 help="100% free token from https://huggingface.co/settings/tokens (Read permissions). No credit card required!"
             )
         with llm_col2:
@@ -558,7 +559,10 @@ with tab2:
                 index=0,
                 help="Qwen 2.5 7B is the #1 recommended free open model for customer service & instruction following (Apache 2.0)."
             )
-        st.caption("💡 *Tip: Leave blank to use 100% offline deterministic policy templates without any API key.*")
+        if not user_hf_key and not has_env_key:
+            st.caption("💡 *Tip: Leave blank to use 100% offline deterministic policy templates without any API key.*")
+        elif user_hf_key:
+            st.caption("✨ *Custom Hugging Face token detected and prioritized.*")
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):
