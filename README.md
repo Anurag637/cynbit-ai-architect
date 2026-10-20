@@ -7,11 +7,14 @@
 > **Assessment Task:** *Identify an AI Opportunity for Cynbit & Build a Working Proof of Concept*  
 > **Deliverables:** (1) AI Opportunity Report, (2) Functional AI/ML Proof of Concept, (3) Technical Approach Report  
 
+[![Live Demo](https://img.shields.io/badge/Streamlit%20Cloud-Live%20Demo-brightgreen.svg?style=flat&logo=streamlit)](https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/)
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=flat&logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B.svg?style=flat&logo=streamlit)](https://streamlit.io/)
-[![Test Suite](https://img.shields.io/badge/PyTest-19%20Passed%20(100%25)-success.svg?style=flat&logo=pytest)](https://pytest.org/)
+[![Test Suite](https://img.shields.io/badge/PyTest-21%20Passed%20(100%25)-success.svg?style=flat&logo=pytest)](https://pytest.org/)
 [![Proof of Concept](https://img.shields.io/badge/Status-Functional%20PoC-orange.svg?style=flat)](https://github.com/Anurag637/cynbit-ai-architect)
+
+> 🌐 **Interactive Live Cloud Demo:** [https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/](https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/)
 
 ---
 
