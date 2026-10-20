@@ -1,10 +1,10 @@
 {
-  "evaluation_timestamp": "2026-10-20 20:06:18",
+  "evaluation_timestamp": "2026-10-20 21:17:03",
   "dataset_size": 20,
   "aspect_metrics": {
-    "mean_precision": 0.8167,
-    "mean_recall": 0.825,
-    "macro_f1": 0.8067
+    "mean_precision": 0.8292,
+    "mean_recall": 0.8667,
+    "macro_f1": 0.8312
   },
   "crisis_metrics": {
     "true_positives": 7,
@@ -24,10 +24,10 @@
   },
   "latency_profile_ms": {
     "iterations": 50,
-    "mean_ms": 0.756,
-    "p95_ms": 0.882,
-    "min_ms": 0.705,
-    "max_ms": 1.005,
+    "mean_ms": 0.855,
+    "p95_ms": 0.989,
+    "min_ms": 0.816,
+    "max_ms": 1.053,
     "methodology": "CPU single-threaded time.perf_counter() on end-to-end pipeline (ABSA + Crisis + Response Synthesis)"
   },
   "detailed_results": [
@@ -55,8 +55,8 @@
         "Billing & Transactions"
       ],
       "pred_aspects": [
-        "Pricing & Value",
-        "Billing & Transactions"
+        "Billing & Transactions",
+        "Pricing & Value"
       ],
       "aspect_f1": 0.667,
       "true_crisis": true,
@@ -71,8 +71,8 @@
       "id": "EVAL-03",
       "category_type": "safety_critical",
       "true_aspects": [
-        "Speed & Turnaround Time",
-        "Customer Service"
+        "Customer Service",
+        "Speed & Turnaround Time"
       ],
       "pred_aspects": [],
       "aspect_f1": 0.0,
@@ -87,12 +87,12 @@
       "id": "EVAL-04",
       "category_type": "safety_critical",
       "true_aspects": [
-        "Cleanliness & Ambience",
-        "Customer Service"
+        "Customer Service",
+        "Cleanliness & Ambience"
       ],
       "pred_aspects": [
-        "Cleanliness & Ambience",
-        "Customer Service"
+        "Customer Service",
+        "Cleanliness & Ambience"
       ],
       "aspect_f1": 1.0,
       "true_crisis": true,
@@ -107,14 +107,14 @@
       "id": "EVAL-05",
       "category_type": "hinglish",
       "true_aspects": [
+        "Customer Service",
         "Cleanliness & Ambience",
-        "Product & Food Quality",
-        "Customer Service"
+        "Product & Food Quality"
       ],
       "pred_aspects": [
+        "Customer Service",
         "Cleanliness & Ambience",
-        "Product & Food Quality",
-        "Customer Service"
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -128,14 +128,14 @@
       "id": "EVAL-06",
       "category_type": "hinglish",
       "true_aspects": [
-        "Product & Food Quality",
         "Pricing & Value",
-        "Speed & Turnaround Time"
+        "Speed & Turnaround Time",
+        "Product & Food Quality"
       ],
       "pred_aspects": [
-        "Product & Food Quality",
         "Pricing & Value",
-        "Speed & Turnaround Time"
+        "Speed & Turnaround Time",
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -149,12 +149,12 @@
       "id": "EVAL-07",
       "category_type": "negation",
       "true_aspects": [
-        "Cleanliness & Ambience",
-        "Customer Service"
+        "Customer Service",
+        "Cleanliness & Ambience"
       ],
       "pred_aspects": [
-        "Cleanliness & Ambience",
-        "Customer Service"
+        "Customer Service",
+        "Cleanliness & Ambience"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -168,12 +168,12 @@
       "id": "EVAL-08",
       "category_type": "negation",
       "true_aspects": [
-        "Product & Food Quality",
-        "Customer Service"
+        "Customer Service",
+        "Product & Food Quality"
       ],
       "pred_aspects": [
-        "Product & Food Quality",
-        "Customer Service"
+        "Customer Service",
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -187,14 +187,14 @@
       "id": "EVAL-09",
       "category_type": "mixed",
       "true_aspects": [
-        "Product & Food Quality",
+        "Customer Service",
         "Speed & Turnaround Time",
-        "Customer Service"
+        "Product & Food Quality"
       ],
       "pred_aspects": [
-        "Product & Food Quality",
         "Customer Service",
-        "Speed & Turnaround Time"
+        "Speed & Turnaround Time",
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -208,16 +208,16 @@
       "id": "EVAL-10",
       "category_type": "mixed",
       "true_aspects": [
-        "Cleanliness & Ambience",
-        "Product & Food Quality",
         "Customer Service",
-        "Billing & Transactions"
+        "Cleanliness & Ambience",
+        "Billing & Transactions",
+        "Product & Food Quality"
       ],
       "pred_aspects": [
-        "Cleanliness & Ambience",
-        "Product & Food Quality",
         "Customer Service",
-        "Billing & Transactions"
+        "Cleanliness & Ambience",
+        "Billing & Transactions",
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -231,14 +231,14 @@
       "id": "EVAL-11",
       "category_type": "positive",
       "true_aspects": [
-        "Speed & Turnaround Time",
         "Customer Service",
+        "Speed & Turnaround Time",
         "Product & Food Quality"
       ],
       "pred_aspects": [
-        "Product & Food Quality",
         "Customer Service",
-        "Speed & Turnaround Time"
+        "Speed & Turnaround Time",
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -256,9 +256,9 @@
         "Pricing & Value"
       ],
       "pred_aspects": [
+        "Pricing & Value",
         "Cleanliness & Ambience",
-        "Product & Food Quality",
-        "Pricing & Value"
+        "Product & Food Quality"
       ],
       "aspect_f1": 0.8,
       "true_crisis": false,
@@ -272,13 +272,13 @@
       "id": "EVAL-13",
       "category_type": "positive",
       "true_aspects": [
-        "Speed & Turnaround Time",
+        "Billing & Transactions",
         "Customer Service",
-        "Billing & Transactions"
+        "Speed & Turnaround Time"
       ],
       "pred_aspects": [
-        "Speed & Turnaround Time",
         "Customer Service",
+        "Speed & Turnaround Time",
         "Billing & Transactions"
       ],
       "aspect_f1": 1.0,
@@ -293,8 +293,8 @@
       "id": "EVAL-14",
       "category_type": "negative",
       "true_aspects": [
-        "Speed & Turnaround Time",
         "Customer Service",
+        "Speed & Turnaround Time",
         "Product & Food Quality"
       ],
       "pred_aspects": [
@@ -312,16 +312,17 @@
       "id": "EVAL-15",
       "category_type": "negative",
       "true_aspects": [
-        "Pricing & Value",
         "Product & Food Quality",
-        "Billing & Transactions"
+        "Billing & Transactions",
+        "Pricing & Value"
       ],
       "pred_aspects": [
-        "Product & Food Quality",
+        "Customer Service",
         "Pricing & Value",
-        "Customer Service"
+        "Billing & Transactions",
+        "Product & Food Quality"
       ],
-      "aspect_f1": 0.667,
+      "aspect_f1": 0.857,
       "true_crisis": false,
       "pred_crisis": false,
       "risk_score": 25,
@@ -387,14 +388,14 @@
       "id": "EVAL-19",
       "category_type": "neutral",
       "true_aspects": [
-        "Product & Food Quality",
+        "Customer Service",
         "Pricing & Value",
-        "Customer Service"
+        "Product & Food Quality"
       ],
       "pred_aspects": [
-        "Product & Food Quality",
+        "Customer Service",
         "Pricing & Value",
-        "Customer Service"
+        "Product & Food Quality"
       ],
       "aspect_f1": 1.0,
       "true_crisis": false,
@@ -408,14 +409,15 @@
       "id": "EVAL-20",
       "category_type": "hinglish",
       "true_aspects": [
-        "Customer Service",
-        "Billing & Transactions"
-      ],
-      "pred_aspects": [
-        "Pricing & Value",
+        "Billing & Transactions",
         "Customer Service"
       ],
-      "aspect_f1": 0.5,
+      "pred_aspects": [
+        "Customer Service",
+        "Billing & Transactions",
+        "Pricing & Value"
+      ],
+      "aspect_f1": 0.8,
       "true_crisis": true,
       "pred_crisis": true,
       "risk_score": 65,

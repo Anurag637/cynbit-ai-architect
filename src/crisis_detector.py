@@ -56,6 +56,27 @@ class CrisisDetector:
     def __init__(self):
         self.triggers = CRISIS_TRIGGERS
 
+    @staticmethod
+    def _is_negated(text: str, match_start: int) -> bool:
+        """
+        Check if the keyword occurrence at match_start is preceded by a negation pattern.
+        e.g., 'nobody threatened', 'did not get food poisoning', 'no fraud', 'not sick'.
+        """
+        prefix = text[max(0, match_start - 45):match_start]
+        neg_regex = r'\b(no|not|did not|didn\'t|was not|wasn\'t|never|nobody|neither|nor|without|zero|haven\'t|has not|hasn\'t)\b(?:\s+\w+){0,3}\s*$'
+        return bool(re.search(neg_regex, prefix))
+
+    def _find_unnegated_matches(self, text: str, keywords: List[str]) -> List[str]:
+        """Return subset of keywords that appear in text without negation."""
+        unnegated = []
+        for kw in keywords:
+            pattern = r'\b' + re.escape(kw) + r'\b'
+            for match in re.finditer(pattern, text):
+                if not self._is_negated(text, match.start()):
+                    unnegated.append(kw)
+                    break
+        return unnegated
+
     def evaluate(self, text: str, star_rating: int = 3) -> CrisisEvaluation:
         lower_text = text.lower()
         score = 0
@@ -71,40 +92,43 @@ class CrisisDetector:
         elif star_rating == 3:
             score += 5
 
-        # 2. Check matched crisis triggers
+        # 2. Check matched crisis triggers (ignoring negated mentions)
         for trigger, weight in self.triggers.items():
-            if re.search(r'\b' + re.escape(trigger) + r'\b', lower_text):
-                score += weight
-                matched.append(trigger)
+            pattern = r'\b' + re.escape(trigger) + r'\b'
+            for match in re.finditer(pattern, lower_text):
+                if not self._is_negated(lower_text, match.start()):
+                    score += weight
+                    matched.append(trigger)
+                    break
 
-        # 3. Categorize threat vectors with matched evidence
+        # 3. Categorize threat vectors with unnegated matched evidence
         legal_kws = ["lawyer", "legal action", "sue", "lawsuit", "court", "consumer court", "consumer forum", "police", "fir", "fssai"]
-        health_kws = ["food poisoning", "vomiting", "hospital", "sick", "illness", "cockroach", "rat", "maggot", "contaminated", "zehar", "poison", "infection", "expired"]
-        fraud_kws = ["fraud", "scam", "cheating", "stole", "theft", "unauthorized charge", "chori", "dhoka", "thug", "robbery"]
+        health_kws = ["food poisoning", "vomiting", "hospital", "sick", "illness", "cockroach", "rat", "maggot", "contaminated", "zehar", "poison", "infection", "expired", "allergy", "allergic", "anaphylaxis", "peanut", "peanuts", "reaction"]
+        fraud_kws = ["fraud", "scam", "cheating", "stole", "theft", "unauthorized charge", "charged twice", "charged my card twice", "double charge", "double charged", "chori", "dhoka", "thug", "robbery"]
         abuse_kws = ["harassment", "assault", "discriminate", "racist", "casteist", "abuse", "threatened", "gunda"]
         viral_kws = ["twitter", "viral", "instagram", "post online", "municipal", "media", "news"]
 
-        matched_legal = [k for k in legal_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        matched_legal = self._find_unnegated_matches(lower_text, legal_kws)
         if matched_legal:
             vectors.append("Legal & Regulatory Action")
             flag_reasons.append(f"Legal Escalation: customer mentioned legal remedies ({', '.join(matched_legal)})")
 
-        matched_health = [k for k in health_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        matched_health = self._find_unnegated_matches(lower_text, health_kws)
         if matched_health:
             vectors.append("Health, Hygiene & Safety Violation")
             flag_reasons.append(f"Health & Safety Hazard: health symptoms or contamination mentioned ({', '.join(matched_health)})")
 
-        matched_fraud = [k for k in fraud_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        matched_fraud = self._find_unnegated_matches(lower_text, fraud_kws)
         if matched_fraud:
             vectors.append("Financial Integrity & Fraud Allegation")
             flag_reasons.append(f"Financial / Fraud Allegation: billing integrity compromised ({', '.join(matched_fraud)})")
 
-        matched_abuse = [k for k in abuse_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        matched_abuse = self._find_unnegated_matches(lower_text, abuse_kws)
         if matched_abuse:
             vectors.append("Harassment & Human Safety")
             flag_reasons.append(f"Safety & Discrimination: abusive behavior or harassment reported ({', '.join(matched_abuse)})")
 
-        matched_viral = [k for k in viral_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        matched_viral = self._find_unnegated_matches(lower_text, viral_kws)
         if matched_viral:
             vectors.append("Public Viral PR Exposure")
             flag_reasons.append(f"Viral Escalation: public media or social platform exposure threatened ({', '.join(matched_viral)})")

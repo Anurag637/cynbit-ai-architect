@@ -34,3 +34,31 @@ def test_routine_positive_review_low_risk(detector):
     assert eval_result.crisis_level == CrisisLevel.LOW
     assert eval_result.risk_score < 35
     assert "Automated AI Brand Agent" in eval_result.escalation_target
+
+
+def test_negated_threat_and_food_poisoning(detector):
+    # Negated phrases must not trigger false positive crisis alarms
+    negated_abuse = detector.evaluate("Nobody threatened me.", star_rating=5)
+    assert negated_abuse.crisis_level == CrisisLevel.LOW
+    assert negated_abuse.risk_score == 0
+    assert "Harassment & Human Safety" not in negated_abuse.threat_vectors
+    assert negated_abuse.threat_vectors == ["Routine Feedback"]
+
+    negated_illness = detector.evaluate("I did not get food poisoning.", star_rating=5)
+    assert negated_illness.crisis_level == CrisisLevel.LOW
+    assert negated_illness.risk_score == 0
+    assert "Health, Hygiene & Safety Violation" not in negated_illness.threat_vectors
+
+
+def test_allergy_crisis_detection(detector):
+    text = "Does this sauce contain peanuts? I have a severe peanut allergy."
+    eval_result = detector.evaluate(text, star_rating=2)
+    assert eval_result.crisis_level == CrisisLevel.CRITICAL
+    assert "Health, Hygiene & Safety Violation" in eval_result.threat_vectors
+
+
+def test_double_charge_financial_integrity(detector):
+    text = "The food was good, but the cashier charged my card twice."
+    eval_result = detector.evaluate(text, star_rating=2)
+    assert eval_result.crisis_level == CrisisLevel.HIGH
+    assert "Financial Integrity & Fraud Allegation" in eval_result.threat_vectors

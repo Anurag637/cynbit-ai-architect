@@ -7,14 +7,11 @@
 > **Assessment Task:** *Identify an AI Opportunity for Cynbit & Build a Working Proof of Concept*  
 > **Deliverables:** (1) AI Opportunity Report, (2) Functional AI/ML Proof of Concept, (3) Technical Approach Report  
 
-[![Live Demo](https://img.shields.io/badge/Streamlit%20Cloud-Live%20Demo-brightgreen.svg?style=flat&logo=streamlit)](https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/)
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=flat&logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B.svg?style=flat&logo=streamlit)](https://streamlit.io/)
-[![Test Suite](https://img.shields.io/badge/PyTest-21%20Passed%20(100%25)-success.svg?style=flat&logo=pytest)](https://pytest.org/)
+[![Test Suite](https://img.shields.io/badge/PyTest-31%20Passed%20(100%25)-success.svg?style=flat&logo=pytest)](https://pytest.org/)
 [![Proof of Concept](https://img.shields.io/badge/Status-Functional%20PoC-orange.svg?style=flat)](https://github.com/Anurag637/cynbit-ai-architect)
-
-> 🌐 **Interactive Live Cloud Demo:** [https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/](https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/)
 
 ---
 
@@ -111,6 +108,9 @@ cynbit-ai-architect/
 ├── reports/
 │   ├── AI_OPPORTUNITY_REPORT.md       # [Deliverable 1] Strategic AI Opportunity Analysis
 │   ├── TECHNICAL_APPROACH_REPORT.md   # [Deliverable 3] Technical Blueprint & Measured Evaluation
+│   ├── QA_AUDIT_REPORT.md             # End-to-end multi-phase QA audit report
+│   ├── BUGS_AND_FIXES.md              # Documented defects, root causes, and regression tests
+│   ├── FINAL_VERIFICATION.md          # Exact execution commands, verification logs, and runbook
 │   └── evaluation_results.json        # Output of empirical evaluation script
 ├── src/
 │   ├── __init__.py
@@ -127,11 +127,14 @@ cynbit-ai-architect/
 │   ├── test_crisis_detector.py        # Unit tests for crisis scoring, triggers, and SLA targets
 │   ├── test_response_generator.py     # Unit tests for guardrails, anti-hallucination, and HITL
 │   ├── test_ingestion.py              # Unit tests for CSV schema validation and error recovery
-│   └── test_api.py                    # Unit tests for FastAPI REST endpoints
+│   ├── test_api.py                    # Unit tests for FastAPI REST endpoints
+│   └── test_csv_test_batches.py       # Unit tests for customer CSV batches and edge cases
 ├── data/
 │   ├── sample_reviews.csv             # 50 synthetic benchmark reviews (CSV format)
 │   ├── sample_reviews.json            # 50 synthetic benchmark reviews (JSON format)
-│   └── labeled_eval_dataset.json      # 20 ground truth labeled reviews for empirical evaluation
+│   ├── labeled_eval_dataset.json      # 20 ground truth labeled reviews for empirical evaluation
+│   ├── test_reviews_franchise_batch.csv # 16 multi-branch franchise customer reviews
+│   └── test_reviews_crisis_and_edge_cases.csv # 17 edge cases & crisis triggers
 ├── app.py                             # [Deliverable 2] Interactive Streamlit Enterprise Dashboard
 ├── evaluate.py                        # Reproducible empirical evaluation benchmark script
 ├── submission_notes.txt               # Candidate portal submission text
@@ -154,15 +157,15 @@ python evaluate.py
 ```
 
 ### Measured Benchmark Metrics:
-* **Aspect Classification Precision:** **81.67%**
-* **Aspect Classification Recall:** **82.50%**
-* **Aspect Macro-F1 Score:** **80.67%**
+* **Aspect Classification Precision:** **82.92%**
+* **Aspect Classification Recall:** **86.67%**
+* **Aspect Macro-F1 Score:** **83.12%**
 * **Crisis Detection Precision:** **100.00%**
 * **Crisis Detection Recall:** **100.00%**
 * **Crisis Detection F1-Score:** **100.00%**
 * **Critical Safety Category False Negatives:** **0 / 6 (Zero)** on the evaluation dataset
 * **Guardrail Concession Leaks:** **0 (Zero)** unverified refund or liability leaks
-* **Mean Processing Latency:** **~0.73 ms / review** (P95: 0.77 ms) measured with `time.perf_counter()` over 50 iterations on CPU.
+* **Mean Processing Latency:** **~0.85 ms / review** (P95: 0.99 ms) measured with `time.perf_counter()` over 50 iterations on CPU.
 
 > **Honest Evaluation Note:** The 100% recall was achieved on the defined 20-sample benchmark set. In real-world open-domain deployments, rare idioms or subtle sarcasm may not trigger keywords; this is why Human-in-the-Loop review is mandatory.
 

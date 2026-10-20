@@ -55,3 +55,38 @@ def test_respond_endpoint(client):
     assert "response" in data
     assert "response_text" in data["response"]
     assert data["response"]["guardrail_passed"] is True
+
+
+def test_batch_analyze_endpoint(client):
+    payload = {
+        "reviews": [
+            {"review_text": "Great breakfast and wonderful coffee.", "star_rating": 5},
+            {"review_text": "Waited 45 minutes for stale food.", "star_rating": 1}
+        ]
+    }
+    res = client.post("/api/v1/batch-analyze", json=payload)
+    assert res.status_code == 200
+    data = res.json()
+    assert data["count"] == 2
+    assert "executive_summary" in data
+
+
+def test_validation_errors_422(client):
+    # Rating > 5
+    res = client.post("/api/v1/analyze", json={"review_text": "Valid review text", "star_rating": 9})
+    assert res.status_code == 422
+
+    # Text too short (< 5 chars)
+    res = client.post("/api/v1/analyze", json={"review_text": "hi", "star_rating": 5})
+    assert res.status_code == 422
+
+
+def test_analytics_and_paginated_reviews(client):
+    res_summary = client.get("/api/v1/analytics/summary")
+    assert res_summary.status_code == 200
+    assert "total_reviews" in res_summary.json()
+
+    res_revs = client.get("/api/v1/reviews?limit=5&offset=0")
+    assert res_revs.status_code == 200
+    assert len(res_revs.json()["reviews"]) == 5
+

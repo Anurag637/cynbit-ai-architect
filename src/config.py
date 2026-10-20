@@ -66,7 +66,7 @@ ASPECT_CATEGORIES: Dict[str, List[str]] = {
     ],
     "Speed & Turnaround Time": [
         "time", "delay", "slow", "fast", "quick", "wait", "waiting", "hour", "minutes",
-        "late", "prompt", "turnaround", "hurry", "queue", "line", "deri", "jaldi"
+        "late", "prompt", "turnaround", "hurry", "queue", "line", "delivery", "deri", "jaldi"
     ],
     "Cleanliness & Ambience": [
         "clean", "dirty", "hygiene", "smell", "restroom", "washroom", "table", "ac",
@@ -78,7 +78,7 @@ ASPECT_CATEGORIES: Dict[str, List[str]] = {
         "affordable", "overcharge", "rip-off", "bill", "charge", "mehnga", "sasta", "daam"
     ],
     "Billing & Transactions": [
-        "billing", "receipt", "payment", "card", "upi", "refund", "extra charge",
+        "billing", "bill", "receipt", "payment", "card", "upi", "refund", "extra charge",
         "hidden fee", "invoice", "overbilled", "scam", "hisab"
     ]
 }
@@ -113,6 +113,11 @@ CRISIS_TRIGGERS: Dict[str, int] = {
     "zehar": 50,
     "poison": 50,
     "infection": 40,
+    "allergy": 45,
+    "allergic": 45,
+    "anaphylaxis": 50,
+    "peanut allergy": 50,
+    "peanuts": 40,
 
     # Severe Financial & Fraud (High Risk)
     "fraud": 45,
@@ -122,6 +127,10 @@ CRISIS_TRIGGERS: Dict[str, int] = {
     "theft": 40,
     "robbery": 45,
     "unauthorized charge": 40,
+    "charged twice": 40,
+    "charged my card twice": 45,
+    "double charge": 40,
+    "double charged": 40,
     "chori": 40,
     "dhoka": 40,
     "thug": 40,

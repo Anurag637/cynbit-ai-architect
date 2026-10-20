@@ -17,6 +17,7 @@ from src.config import ASPECT_CATEGORIES, Sentiment
 
 
 POSITIVE_LEXICON = {
+    "good", "nice", "fine", "correct", "accurate", "fair", "pleased", "happy",
     "delicious", "amazing", "great", "excellent", "best", "exceptional", "friendly",
     "polite", "quick", "fast", "prompt", "clean", "hygienic", "spotless", "loved",
     "awesome", "wonderful", "warm", "helpful", "affordable", "consistent", "superb",
@@ -25,6 +26,7 @@ POSITIVE_LEXICON = {
 }
 
 NEGATIVE_LEXICON = {
+    "bad", "poor", "incorrect", "wrong", "inaccurate", "unfair", "unhappy", "late",
     "rude", "worst", "terrible", "horrible", "awful", "slow", "delay", "cold", "raw",
     "stale", "tasteless", "dirty", "unhygienic", "smell", "expensive", "overpriced",
     "unauthorized", "scam", "fraud", "unacceptable", "ignored", "spilled", "melted",
@@ -34,7 +36,7 @@ NEGATIVE_LEXICON = {
 }
 
 NEGATION_TERMS = {
-    "not", "never", "no", "hardly", "scarcely", "barely", "neither", "nor", "nahi", "mat", "na"
+    "not", "never", "no", "nobody", "without", "hardly", "scarcely", "barely", "neither", "nor", "nahi", "mat", "na"
 }
 
 EMOTION_KEYWORDS = {

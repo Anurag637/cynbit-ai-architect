@@ -6,10 +6,6 @@ Candidate Portal URL: https://www.cynbit.in/candidate/cmu2qy3wh000004lc0uqicfco
 Assessment Task: Identify an AI Opportunity for Cynbit & Build a Proof of Concept
 ================================================================================
 
-[FIELD 0] Live Interactive Web Application (Streamlit Cloud):
-https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/
-
---------------------------------------------------------------------------------
 [FIELD 1] Primary Deliverable Link (GitHub Repository):
 https://github.com/Anurag637/cynbit-ai-architect
 
@@ -32,10 +28,6 @@ Dear Cynbit Technical Evaluation Team & Hiring Leads,
 
 I have completed the practical technical assessment for the AI/ML Engineer Intern role. After analyzing Cynbit Technologies' public offerings (Custom IT Systems, TenantEase, Cynbit Studio / BitElevate, and Revio), I identified and built a comprehensive solution for Cynbit's flagship SaaS product: "Revio 2.0 — AI-Powered Review Intelligence and Crisis Detection System".
 
-Live Application Demo:
-A fully functional, interactive deployment is live and accessible at:
-https://cynbit-ai-architect-vpzjbsm3z965gdtgvi5ahv.streamlit.app/
-
 Key Assessment Deliverables Completed:
 
 1. AI Opportunity Report (Deliverable 1):
@@ -57,9 +49,10 @@ Key Assessment Deliverables Completed:
    - Honest documentation of baseline limitations (sarcasm and out-of-lexicon phrasing).
 
 4. Empirical Benchmark & Verification:
-   - 21/21 automated unit tests passing under pytest (pytest -v).
+   - 31/31 automated unit tests passing under pytest (pytest -v).
+   - Comprehensive multi-phase QA audit reports generated (QA_AUDIT_REPORT.md, BUGS_AND_FIXES.md, FINAL_VERIFICATION.md).
    - Reproducible evaluation script (evaluate.py) tested against a labeled ground truth dataset of 20 diverse reviews (covering positive, negative, mixed, negation, Hinglish, and safety crises).
-   - Measured Metrics: Aspect Macro-F1: 80.67% (Precision: 81.67%, Recall: 82.50%), Crisis Recall: 100.00%, Critical Safety False Negatives: 0 / 6, End-to-End Latency: 0.73 ms / review.
+   - Measured Metrics: Aspect Macro-F1: 83.12% (Precision: 82.92%, Recall: 86.67%), Crisis Recall: 100.00%, Critical Safety False Negatives: 0 / 6, End-to-End Latency: 0.85 ms / review.
 
 Local Execution Commands (Windows PowerShell):
 • Install: pip install -r requirements.txt
