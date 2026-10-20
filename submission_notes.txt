@@ -3,52 +3,69 @@ CYNBIT CANDIDATE PORTAL SUBMISSION GUIDE
 Role: AI/ML Engineer Intern
 Applicant: Anurag Pandey (anurag637@zohomail.in)
 Candidate Portal URL: https://www.cynbit.in/candidate/cmu2qy3wh000004lc0uqicfco
+Assessment Task: Identify an AI Opportunity for Cynbit & Build a Proof of Concept
 ================================================================================
 
-[FIELD 1] Primary Deliverable Link (GitHub Repo):
+[FIELD 1] Primary Deliverable Link (GitHub Repository):
 https://github.com/Anurag637/cynbit-ai-architect
 
 --------------------------------------------------------------------------------
-[FIELD 2] Deliverable Link 2 (Interactive Colab / Walkthrough Notebook):
-https://github.com/Anurag637/cynbit-ai-architect/blob/main/notebooks/revio_ai_poc_walkthrough.ipynb
-
---------------------------------------------------------------------------------
-[FIELD 3] Deliverable Link 3 (Strategic AI Opportunity Report):
+[FIELD 2] Deliverable Link 2 (AI Opportunity Report):
 https://github.com/Anurag637/cynbit-ai-architect/blob/main/reports/AI_OPPORTUNITY_REPORT.md
 
 --------------------------------------------------------------------------------
-[FIELD 4] Deliverable Link 4 (Technical Approach & Architecture Blueprint):
+[FIELD 3] Deliverable Link 3 (Technical Approach & Architecture Report):
 https://github.com/Anurag637/cynbit-ai-architect/blob/main/reports/TECHNICAL_APPROACH_REPORT.md
+
+--------------------------------------------------------------------------------
+[FIELD 4] Deliverable Link 4 (Reproducible Evaluation Results):
+https://github.com/Anurag637/cynbit-ai-architect/blob/main/reports/evaluation_results.json
 
 --------------------------------------------------------------------------------
 [FIELD 5] Execution Notes & Strategy Rationale (Copy & Paste directly into portal):
 --------------------------------------------------------------------------------
 Dear Cynbit Technical Evaluation Team & Hiring Leads,
 
-I have completed the practical technical assessment for the AI/ML Engineer Intern role. Following an analysis of Cynbit Technologies' public offerings (Custom IT Systems, TenantEase, Cynbit Studio/BitElevate, and Revio), I identified and built a comprehensive solution for Cynbit's flagship SaaS product: "Revio 2.0: Autonomous Multi-Agent Brand Reputation & Crisis Intelligence Engine".
+I have completed the practical technical assessment for the AI/ML Engineer Intern role. After analyzing Cynbit Technologies' public offerings (Custom IT Systems, TenantEase, Cynbit Studio / BitElevate, and Revio), I identified and built a comprehensive solution for Cynbit's flagship SaaS product: "Revio 2.0 — AI-Powered Review Intelligence and Crisis Detection System".
 
-Key Deliverables Delivered in this Repository:
-1. AI Opportunity Report (Deliverable 1): Strategic industry analysis evaluating 4 AI horizons for Cynbit (Revio 2.0, Cynbit Studio Architecture Evaluator, TenantEase Predictive Lease Risk, and Cynbit Nexus Pre-sales Blueprint Agent) with an objective feasibility vs. ARR impact matrix.
-2. Functional Proof of Concept (Deliverable 2): Production-ready Python implementation featuring:
-   - Aspect-Based Sentiment Analysis (ABSA) decomposing reviews into 6 operational facets (Service, Food Quality, Turnaround Time, Ambience, Pricing, Billing) with discourse clause segmentation and negation handling.
-   - Calibrated Crisis & Urgency Scoring (0-100%) detecting legal threats, health violations, and viral PR escalation with strict SLA containment windows.
-   - Multi-Agent Response Synthesizer with 4 brand personas, auto-ticket generation (#REV-XXXX), and deterministic zero-liability legal guardrails.
-   - Interactive Streamlit Command Center (app.py) with real-time KPI radars, live review testing lab, and multi-location branch leaderboards.
-   - Enterprise FastAPI Microservice (src/api.py) with Swagger documentation.
-3. Technical Approach Report (Deliverable 3): Detailed architecture blueprint covering compound AI design, sub-15ms CPU inference, Hinglish/code-mixing pre-processing, prompt templates, and AWS/Azure deployment roadmaps.
-4. Production Quality & Verification: 13/13 automated unit tests passed with 100% pass rate (pytest -v), Dockerfile containerization, and clean Git history.
+Key Assessment Deliverables Completed:
 
-Local Setup Instructions:
-• Clone repo & install: pip install -r requirements.txt
-• Run Interactive Dashboard: streamlit run app.py
-• Run FastAPI Microservice: uvicorn src.api:app --reload --port 8000
-• Run Test Suite: python -m pytest -v
+1. AI Opportunity Report (Deliverable 1):
+   - Evidence-backed analysis of Cynbit's business lines and corporate profile (Jaipur, Rajasthan).
+   - Clear distinction between verified public facts, commercial assumptions, and validation targets.
+   - Comprehensive comparison of 4 AI opportunities (Revio 2.0, TenantEase Lease Risk OCR, BitElevate Architecture Evaluator, and Cynbit Pre-Sales Blueprint Agent) with feasibility and ARR impact scoring.
+   - Target user personas, enterprise workflow, 90-day pilot KPIs, risks, and DPDP Act 2023 compliance notes.
 
-Thank you for this practical challenge. I look forward to discussing the technical design and how I can contribute to Cynbit's autonomous agent initiatives!
+2. Functional Proof of Concept (Deliverable 2 - Streamlit & FastAPI):
+   - Ingestion & Schema Validation: Accepts CSV uploads (review_text, star_rating, branch_name) with error recovery, malformed row filtering, and clearly labeled synthetic benchmark dataset.
+   - Aspect-Based Sentiment Analysis (ABSA): Breaks reviews into 6 operational facets (Food/Product Quality, Customer Service, Cleanliness & Ambience, Pricing & Value, Billing & Transactions, Speed & Turnaround) with discourse clause splitting, negation inversion, and Hinglish keyword support.
+   - Crisis & Urgency Triage: Evaluates health/safety hazards, fraud allegations, and legal escalation with evidence-matched threat vectors, SLA routing, and screening index (0-100).
+   - Governed Response Drafting: Contextual replies supporting 4 brand personas, offline deterministic policy fallback, optional Gemini/OpenAI hook, and zero-liability guardrails forbidding unverified refunds or fault admissions.
+   - Human-in-the-Loop (HITL) Workflow: Requires human approval and editing for every response before dispatch (external publishing is simulated via mock connector).
+   - Analytics Command Center: Real-time calculated KPIs, aspect health radar, branch ranking table, and CSV export.
+
+3. Technical Approach Report (Deliverable 3):
+   - Compound AI architecture, sub-millisecond CPU execution rationale, prompt engineering templates, and AWS/Azure deployment blueprints.
+   - Honest documentation of baseline limitations (sarcasm and out-of-lexicon phrasing).
+
+4. Empirical Benchmark & Verification:
+   - 19/19 automated unit tests passing under pytest (pytest -v).
+   - Reproducible evaluation script (evaluate.py) tested against a labeled ground truth dataset of 20 diverse reviews (covering positive, negative, mixed, negation, Hinglish, and safety crises).
+   - Measured Metrics: Aspect Macro-F1: 80.67% (Precision: 81.67%, Recall: 82.50%), Crisis Recall: 100.00%, Critical Safety False Negatives: 0 / 6, End-to-End Latency: 0.73 ms / review.
+
+Local Execution Commands (Windows PowerShell):
+• Install: pip install -r requirements.txt
+• Run Tests: python -m pytest -v
+• Run Evaluation: python evaluate.py
+• Run Dashboard: python -m streamlit run app.py
+• Run REST API: python -m uvicorn src.api:app --reload --port 8000
+
+Thank you for this practical challenge. I look forward to discussing the technical design and how I can contribute to Cynbit's AI initiatives!
 
 Best regards,
 Anurag Pandey
-B.Tech CSE (AI & ML), K. R. Mangalam University
+B.Tech CSE (AI & ML), K. R. Mangalam University (Batch of 2027)
+Email: anurag637@zohomail.in
 LinkedIn: https://www.linkedin.com/in/anurag637/
 GitHub: https://github.com/Anurag637
 ================================================================================

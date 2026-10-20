@@ -53,3 +53,14 @@ def test_negation_inversion(analyzer):
     cleanliness_aspect = next((a for a in analysis.detected_aspects if a.category == "Cleanliness & Ambience"), None)
     if cleanliness_aspect:
         assert cleanliness_aspect.sentiment == Sentiment.NEGATIVE
+
+
+def test_hinglish_aspect_sentiment(analyzer):
+    text = "Khana ekdum bakwas tha aur staff bohot battameez tha."
+    analysis = analyzer.analyze(text, star_rating=1)
+    assert analysis.overall_sentiment == Sentiment.NEGATIVE
+    categories = [a.category for a in analysis.detected_aspects]
+    assert "Product & Food Quality" in categories
+    assert "Customer Service" in categories
+    food_asp = next(a for a in analysis.detected_aspects if a.category == "Product & Food Quality")
+    assert food_asp.sentiment == Sentiment.NEGATIVE

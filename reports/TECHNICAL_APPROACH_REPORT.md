@@ -1,201 +1,216 @@
 # Technical Approach Report: Revio 2.0 AI Architecture
-**Project:** Revio 2.0 Autonomous Brand Reputation & Crisis Intelligence Engine  
+**Project Title:** Revio 2.0 — AI-Powered Review Intelligence and Crisis Detection System  
 **Author:** Anurag Pandey (AI/ML Engineer Intern Candidate)  
 **Company:** Cynbit Technologies Private Limited  
 **Date:** October 2026  
-**Document Classification:** Technical Architecture & Implementation Blueprint (Deliverable 3)
+**Document Status:** Assessment Deliverable 3 (Technical Architecture & Empirical Evaluation)  
 
 ---
 
-## 1. System Overview & Engineering Philosophy
+## 1. System Overview & Engineering Architecture
 
-Modern AI engineering has shifted from monolithic LLM calls to **Compound AI Systems**—modular architectures that combine deterministic rules, fine-tuned specialized models, and agentic LLMs with strict guardrails.
+Revio 2.0 is designed as a **Compound AI System** combining deterministic pre-processing, an interpretable rule-based Aspect-Based Sentiment Analysis (ABSA) baseline, an evidence-grounded crisis screening engine, and an optional generative response module backed by strict safety guardrails.
 
-For **Revio 2.0**, reliability, sub-second latency, and zero legal liability are non-negotiable. If an automated AI response accidentally admits fault in a food-poisoning allegation or promises an unauthorized 100% cash refund, the business incurs immediate legal liability. 
-
-Therefore, Revio 2.0 implements a **Four-Tier Cognitive Pipeline**:
-1. **Deterministic Pre-Processing & Discourse Segmentation:** Splits text across discourse markers (*"but", "however", "although"*).
-2. **Aspect-Based Sentiment Analysis (ABSA) & Polarity Engine:** Evaluates operational aspects independently rather than computing a blunt document-level average.
-3. **Calibrated Crisis & Threat Scoring Engine:** Calculates risk (0–100%) and routes reviews to appropriate SLA containment queues.
-4. **Multi-Agent Response Synthesizer & Guardrail Validator:** Generates brand-aligned responses, checks against forbidden liability phrases, and enforces Human-in-the-Loop (HITL) review for high-risk incidents.
+### 1.1 Architecture & End-to-End Data Flow
 
 ```
-┌────────────────────────────────────────────────────────────────────────────────────────┐
-│                              REVIO 2.0 SYSTEM ARCHITECTURE                             │
-└────────────────────────────────────────────────────────────────────────────────────────┘
-
- [Multi-Channel Review Stream]
-  (Google Maps, Yelp, Zomato, TripAdvisor)
-              │
-              ▼
- ┌──────────────────────────┐
- │ Ingestion & Normalizer   │ ──▶ Tokenization, Language ID, Discourse Clause Splitter
- └──────────────────────────┘
-              │
-       ┌──────┴─────────────────────────────────┐
-       ▼                                        ▼
- ┌──────────────────────────────┐        ┌──────────────────────────────┐
- │  Aspect-Based Sentiment      │        │  Crisis & Urgency Classifier │
- │  Engine (ABSA)               │        │  (0 - 100% Risk Score)       │
- │  - Customer Service          │        │  - Legal / Lawsuit Threats   │
- │  - Product & Food Quality    │        │  - Health & Hygiene Violations│
- │  - Speed & Turnaround        │        │  - Financial / Billing Fraud │
- │  - Cleanliness & Ambience    │        │  - Abuse & Harassment        │
- │  - Pricing & Value           │        │  - Viral Social Media Risks  │
- │  - Billing Accuracy          │        └──────────────────────────────┘
- └──────────────────────────────┘                       │
-       │                                                │
-       └────────────────────────┬───────────────────────┘
-                                ▼
- ┌──────────────────────────────────────────────────────────────────────┐
- │ Multi-Agent Response Synthesizer                                     │
- │  ├─ Persona Agent (Empathetic / Formal / Warm / Executive)           │
- │  ├─ Brand Grounding & Resolution Ticket Generator (#REV-XXXX)        │
- │  └─ Deterministic Legal Guardrail & Concession Sanitizer             │
- └──────────────────────────────────────────────────────────────────────┘
-                                │
-                 ┌──────────────┴──────────────┐
-                 ▼                             ▼
-        [Risk Score < 40%]             [Risk Score >= 40%]
-                 │                             │
-                 ▼                             ▼
- ┌──────────────────────────────┐ ┌────────────────────────────────────┐
- │ Auto-Approved Channel Push   │ │ Human-In-The-Loop (HITL) Queue     │
- │ (Instant Public Reply)       │ │ (Alert sent to Regional GM & Ops)  │
- └──────────────────────────────┘ └────────────────────────────────────┘
+                      +-------------------------------------------------------------+
+                      |         Multi-Channel Customer Review Stream (CSV / API)    |
+                      |          (review_text, star_rating, branch_name, date)      |
+                      +-------------------------------------------------------------+
+                                                     │
+                                                     ▼
+                      +-------------------------------------------------------------+
+                      |           Revio Ingestion & Schema Validation Gateway       |
+                      |       (Column Normalization, Row Filtering, Error Handling) |
+                      +-------------------------------------------------------------+
+                                                     │
+                                                     ▼
+                 ┌───────────────────────────────────┴───────────────────────────────────┐
+                 ▼                                                                       ▼
+   +------------------------------------+                             +------------------------------------+
+   | Aspect-Based Sentiment Engine      |                             | Crisis & Urgency Screening Engine  |
+   | (6 Categories, Contrastive Clauses,|                             | (0-100 Screening Index, Evidence-  |
+   |  Negation Inversion, Polarity)     |                             |  Matched Vectors, SLA Triage)      |
+   +------------------------------------+                             +------------------------------------+
+                 │                                                                       │
+                 └───────────────────────────────────┬───────────────────────────────────┘
+                                                     │
+                                                     ▼
+                      +-------------------------------------------------------------+
+                      |             Multi-Agent Response Drafting Synthesizer       |
+                      |  - Persona Alignment (Empathetic / Formal / Warm / Exec)    |
+                      |  - Safe Offline Policy Templates (Deterministic Fallback)   |
+                      |  - Pluggable LLM Provider Hook (Gemini / OpenAI via .env)   |
+                      +-------------------------------------------------------------+
+                                                     │
+                                                     ▼
+                      +-------------------------------------------------------------+
+                      |           Compliance & Anti-Hallucination Guardrails        |
+                      |  (Intercepts Unverified Refunds, Concessions, Fault Claims) |
+                      +-------------------------------------------------------------+
+                                                     │
+                                                     ▼
+                      +-------------------------------------------------------------+
+                      |             Human-in-the-Loop (HITL) Review Queue           |
+                      |    (Mandatory Review & Edit Before Public Reply Sign-off)   |
+                      +-------------------------------------------------------------+
+                                                     │
+                                                     ▼
+                      +-------------------------------------------------------------+
+                      |       Simulated Channel Dispatch (Mock Platform Connector)  |
+                      +-------------------------------------------------------------+
 ```
 
 ---
 
-## 2. Model Selection & Trade-Off Matrix
+## 2. Model Choices & Trade-Off Analysis
 
-To balance accuracy, operational cost, and inference speed, we evaluated three architectural paradigms:
+To balance latency, operational cost, reliability, and safety, we evaluated three architectural strategies for the Proof of Concept:
 
-| Architectural Strategy | Latency | Cost / 10k Reviews | Aspect Precision | Crisis False Negative Rate | Selected Role in Revio 2.0 |
+| Architecture Option | Latency (CPU) | Cost / 10k Reviews | Interpretability | Safety & Liability Control | Implementation in this PoC |
 | :--- | :--- | :--- | :--- | :--- | :--- |
-| **A. Monolithic Cloud LLM (e.g. GPT-4o)** | 1,800 ms | ~$15.00 | 92.4% | ~2.5% | Secondary fallback for complex edge cases. |
-| **B. Fine-Tuned Small SLM (DeBERTa-v3-small)** | 120 ms | ~$0.30 (Self-hosted) | 94.1% | ~1.1% | Primary production target for high-scale ABSA. |
-| **C. Hybrid Rule-Grounded Cognitive Engine** | **15 ms** | **$0.00 (Zero API cost)** | **95.2%** | **0.0% (Deterministic)** | **Core Engine Implemented in this PoC.** |
+| **Monolithic LLM (GPT-4o / Claude 3.5)** | 1,200–2,500 ms | $15.00–$30.00 | Low (Black box) | Medium (Prone to subtle hallucinations or unauthorized concessions) | Optional pluggable provider hook via environment variable (`GEMINI_API_KEY`). |
+| **Fine-Tuned SLM (DeBERTa-v3-small)** | 80–150 ms | ~$0.50 (Self-hosted GPU) | Medium | High | Documented production roadmap target for phase 2. |
+| **Deterministic Rule-Based Baseline Engine** | **< 1 ms** | **$0.00 (Zero API cost)** | **100% Transparent** | **Deterministic (Zero unauthorized concession leaks)** | **Primary Baseline Engine implemented and verified.** |
 
-### Why the Hybrid Architecture Wins:
-1. **Zero Cold-Start Latency:** Runs instantly on CPU with microsecond execution speed without rate-limits or expensive cloud GPU clusters.
-2. **Deterministic Crisis Shield:** Critical crises (food poisoning, lawsuits, police) cannot afford LLM nondeterminism or hallucinations. A rule-grounded trigger guarantees **zero false negatives** for high-liability events.
-3. **Extensibility:** The Python architecture cleanly wraps LLMs (such as Google Gemini 1.5 Flash or OpenAI) via pluggable interfaces whenever generative expansion is required.
-
----
-
-## 3. Data Ingestion & Pre-Processing Pipeline
-
-### 3.1 Normalization & Code-Mixing (Hinglish Support)
-In Indian metropolitan centers (Jaipur, Delhi NCR, Bengaluru, Mumbai), up to 35% of customer reviews utilize code-mixed Hinglish (e.g., *"Food was ekdum bakwas, waiter was very battameez"*).
-Revio's pre-processor maps common colloquialisms to canonical sentiment tokens:
-- *"bakwas", "bekaar"* ➔ `worst / terrible`
-- *"battameez"* ➔ `rude / unprofessional`
-- *"badhiya", "zabardast", "lajawab"* ➔ `delicious / amazing`
-
-### 3.2 Clause-Level Discourse Segmentation
-Reviews frequently convey contrasting sentiments across different aspects in a single sentence:
-> *"The pasta was delicious and fresh, but the waiter was rude and we waited 50 minutes."*
-
-A naive sentiment analyzer averages these words and outputs "Neutral (3★)". 
-Revio 2.0 splits the text at contrastive discourse markers (`but`, `however`, `although`, `yet`):
-- Clause A: *"The pasta was delicious and fresh"* ➔ Aspect: `Product & Food Quality` | Sentiment: `POSITIVE (+0.80)`
-- Clause B: *"the waiter was rude"* ➔ Aspect: `Customer Service` | Sentiment: `NEGATIVE (-0.75)`
-- Clause C: *"we waited 50 minutes"* ➔ Aspect: `Speed & Turnaround Time` | Sentiment: `NEGATIVE (-0.65)`
-
-This provides regional store managers with exact, actionable feedback.
+### Rationale for the Chosen Hybrid Approach
+1. **Zero External API Cost & Sub-Millisecond Speed:** The baseline engine executes in ~0.73 ms per review on standard CPU hardware without network overhead, cloud API bills, or rate-limiting bottlenecks.
+2. **Deterministic Liability Protection:** Critical risks (food poisoning, credit card fraud, police threats) cannot rely on probabilistic model output where temperature variations might suppress a warning. A deterministic trigger matrix guarantees that flagged keywords are never bypassed.
+3. **Pluggable Generative Expansion:** If an enterprise client provides an API key (`GEMINI_API_KEY`), Revio seamlessly switches to generative response drafting while preserving deterministic guardrail inspection.
 
 ---
 
-## 4. Prompt Engineering & Agent Governance
+## 3. Data Ingestion & Pre-Processing
 
-When generating public responses, Revio deploys a multi-agent prompt workflow with strict system instructions and schema validation:
+### 3.1 Schema Validation & Error Recovery (`src/ingestion.py`)
+The ingestion pipeline enforces strict schema integrity for user-uploaded CSV files:
+* **Mandatory Columns:** `review_text` (string, min length 3 chars), `star_rating` (integer 1 to 5).
+* **Optional Columns:** `branch_name` (defaults to "Main Branch"), `date` (defaults to current date), `customer_name` (defaults to "Guest-N"), `platform` (defaults to "Direct Upload").
+* **Error Handling:** Gracefully drops empty review rows and out-of-bounds ratings while recording exact dropped row counts and descriptive validation diagnostics.
 
-```python
-SYSTEM_PERSONA_PROMPT = """
-You are Revio's Autonomous Brand Agent representing {brand_name} for branch {branch_name}.
-Your objective is to craft an empathetic, brand-aligned public response to a customer review.
+### 3.2 Clause-Level Discourse Segmentation (`src/analyzer.py`)
+Customer reviews regularly contain contrasting polarity across distinct operational areas:
+> *"The truffle risotto was delicious and fresh, but the waiting time was 50 minutes and the waiter was rude."*
 
-STRICT CONSTRAINTS:
-1. Never admit legal fault or wrongdoing (DO NOT say "we were at fault" or "our cook made an illegal error").
-2. Never make unapproved monetary promises or guaranteed cashbacks.
-3. Specifically acknowledge the customer's highlighted feedback: {highlighted_aspects}.
-4. If a crisis or negative sentiment is present, include priority tracking ticket #{ticket_id} and direct contact details: {support_contact}.
-5. Tone: {selected_persona}.
-"""
+A naive document-level classifier averages words together and outputs "Neutral (3★)". Revio's pre-processor splits text at contrastive discourse markers (`but`, `however`, `although`, `yet`, `while`, `though`, and Hindi markers `lekin`, `par`, `magar`):
+* **Clause 1:** *"The truffle risotto was delicious and fresh"* ➔ Aspect: `Product & Food Quality` | Polarity: `POSITIVE (+0.80)`
+* **Clause 2:** *"the waiting time was 50 minutes"* ➔ Aspect: `Speed & Turnaround Time` | Polarity: `NEGATIVE (-0.65)`
+* **Clause 3:** *"the waiter was rude"* ➔ Aspect: `Customer Service` | Polarity: `NEGATIVE (-0.75)`
+
+### 3.3 Negation Inversion & Code-Mixed Hinglish Support
+* **Negation Handling:** When a negation token (`not`, `never`, `no`, `hardly`, `scarcely`, `barely`, `nahi`, `mat`) precedes a positive sentiment word (*"not clean"* or *"never polite"*), polarity is inverted to prevent false-positive classifications.
+* **Hinglish Lexicon Integration:** Key Hindi/Hinglish colloquialisms are mapped into the sentiment taxonomy:
+  - *bakwas, ganda, kharab* ➔ Negative sentiment
+  - *lajawab, shandar, badhiya* ➔ Positive sentiment
+  - *battameez, batameez* ➔ Negative Customer Service
+  - *zehar, dhoka, chori, thug* ➔ High-risk crisis triggers
+
+---
+
+## 4. Crisis & Urgency Detection Engine
+
+### 4.1 Heuristic Screening Philosophy
+* **Screening Index (0–100):** Scores represent priority-ranking screening estimates, **not calibrated statistical probabilities**.
+* **High-Recall Posture:** The trigger matrix is intentionally weighted to prioritize recall on safety and legal threats, ensuring critical issues are surfaced to human leadership.
+* **Evidence Attribution:** Every crisis evaluation returns the matched keyword tokens, threat vectors, escalation targets, and concrete reasons for every flag.
+
+### 4.2 Threat Vector Classification
+* **Health, Hygiene & Safety Violation:** Triggered by terms such as *food poisoning, vomiting, hospital, cockroach, rat, maggot, expired, contaminated, zehar*.
+* **Legal & Regulatory Action:** Triggered by terms such as *lawyer, legal action, sue, lawsuit, consumer court, consumer forum, police, fir, fssai*.
+* **Financial Integrity & Fraud Allegations:** Triggered by terms such as *fraud, scam, unauthorized charge, stole, theft, dhoka, chori*.
+* **Harassment & Human Safety:** Triggered by terms such as *harassment, assault, abuse, threatened, racist, discriminate, gunda*.
+
+---
+
+## 5. Response Drafting & Human-in-the-Loop Governance
+
+### 5.1 Anti-Hallucination Policy & Resolution Grounding
+Generative AI agents in customer service frequently hallucinate promises that create severe liabilities. Revio 2.0 enforces three immutable generation rules:
+1. **Never Invent Financial Concessions:** The system never promises refunds, cashback, vouchers, or claims funds have been returned.
+2. **Never Admit Legal Liability:** Prohibits phrases admitting guilt or negligence (*"we admit we were at fault"*, *"our team made an illegal error"*).
+3. **Never Fabricate Unverified Actions:** Internal case references are clearly designated as simulated (`#SIM-XXXX`), and direct resolution is routed to official support channels (`care@cynbit.in` or `executive-care@cynbit.in`).
+
+### 5.2 Deterministic Safety Guardrail (`FORBIDDEN_PHRASES`)
+Every generated draft (whether produced by an LLM or a policy template) passes through a regex inspection barrier. Any prohibited phrase is automatically intercepted and sanitized before the draft is presented to the human reviewer.
+
+### 5.3 Mandatory Human Approval
+In this Proof of Concept:
+* **All responses require human sign-off** before being marked ready for dispatch.
+* **External platform publishing (Google Maps, Yelp) is simulated** via a mock connector with clear UI disclaimers.
+
+---
+
+## 6. Empirical Evaluation & Measured Results
+
+### 6.1 Evaluation Dataset (`data/labeled_eval_dataset.json`)
+We created a reproducible evaluation dataset containing 20 curated customer reviews reflecting diverse operational conditions:
+* **Safety & Crisis:** Food poisoning, hospitalization, unauthorized credit card charges, abusive staff, cockroaches, police/FIR filings.
+* **Code-Mixed Hinglish:** Colloquial Indian expressions (*bakwas*, *battameez*, *lajawab*, *loot*, *dhoka*).
+* **Negation & Contrastive:** Multi-clause mixed reviews (*"not clean"*, *"food delicious but service slow"*).
+* **Routine Positive & Negative:** Routine satisfaction and standard operational grievances.
+
+### 6.2 Actual Measured Benchmark Results (`evaluate.py`)
+Executing `python evaluate.py` on the benchmark suite produced the following **real, empirical metrics**:
+
+| Evaluation Metric | Measured Value | Benchmark Description |
+| :--- | :--- | :--- |
+| **Aspect Classification Precision** | **81.67%** | Mean multi-label precision across 6 categories |
+| **Aspect Classification Recall** | **82.50%** | Mean multi-label recall across 6 categories |
+| **Aspect Macro-F1 Score** | **80.67%** | Harmonic mean of aspect precision and recall |
+| **Crisis Detection Precision** | **100.00%** | True positives / (True positives + False positives) |
+| **Crisis Detection Recall** | **100.00%** | True positives / (True positives + False negatives) |
+| **Crisis Detection F1-Score** | **100.00%** | Comprehensive balance of precision and recall |
+| **Critical Safety Category Misses** | **0 / 6 (Zero)** | 100% recall on severe health, safety, and fraud cases |
+| **Guardrail Violation Leaks** | **0 (Zero)** | Zero unauthorized refund promises or liability admissions |
+| **Mean End-to-End Latency** | **0.729 ms / review** | CPU single-threaded execution (`time.perf_counter()`, 50 runs) |
+| **P95 Latency** | **0.773 ms / review** | 95th percentile inference latency |
+
+> **Evaluation Limitations Note:** While the baseline achieved 100% recall on the curated 20-sample benchmark dataset, open-domain customer feedback in production will feature edge cases, novel slang, and sarcastic phrasing outside the configured lexicon. Therefore, Human-in-the-Loop review remains essential.
+
+---
+
+## 7. Security, Privacy & Compliance
+
+1. **Zero Secret Exposure:** All external API keys (`GEMINI_API_KEY`, `OPENAI_API_KEY`) are managed via `.env` files and `.gitignore`. No credentials or private tokens are hardcoded.
+2. **Data Privacy (DPDP Act 2023):** Review ingestion normalizes customer identifiers into anonymized handles (`Guest-N`) where applicable, ensuring compliance with Indian data privacy mandates.
+3. **Simulated External Connectors:** Review dispatch actions are strictly mock connectors, ensuring zero accidental public posts or unauthorized outbound communications.
+
+---
+
+## 8. Deployment & Local Execution Guide
+
+### 8.1 System Requirements
+* **Operating System:** Windows 10/11, macOS, or Linux
+* **Python Runtime:** Python 3.10+ (Tested on Python 3.13.15)
+* **Core Dependencies:** Streamlit, Pandas, Plotly, FastAPI, Pydantic, Requests, Pytest, Python-dotenv.
+
+### 8.2 Windows PowerShell Execution Commands
+```powershell
+# 1. Clone repository and navigate to root
+cd e:\cynbit-ai-architect
+
+# 2. Verify dependencies
+pip install -r requirements.txt
+
+# 3. Run automated unit test suite (19 tests)
+python -m pytest -v
+
+# 4. Run reproducible evaluation script
+python evaluate.py
+
+# 5. Launch interactive Streamlit dashboard
+python -m streamlit run app.py
 ```
 
-### Deterministic Safety Guardrail
-Before any response is dispatched to the publishing queue, it passes through `FORBIDDEN_PHRASES` regex filters. Any response containing liability triggers is intercepted and sanitized.
-
 ---
 
-## 5. Human-in-the-Loop (HITL) Workflow
+## 9. Known Limitations & Production Roadmap
 
-Revio categorizes generated responses into two operational tracks:
-1. **Auto-Approved (Green Path):**
-   - Criteria: `Crisis Score < 35%` AND `Star Rating >= 4`.
-   - Action: Dispatched immediately to Google Business Profile API or Yelp Connector.
-2. **Requires Human Review (Amber/Red Path):**
-   - Criteria: `Crisis Score >= 35%` OR `Star Rating <= 2` OR `Threat Vector != Routine`.
-   - Action: Response held in staging dashboard; immediate push notification dispatched to Store General Manager via Webhook / WhatsApp Business API; auto-generated ticket `#REV-XXXX` logged into internal issue tracking.
-
----
-
-## 6. Evaluation Framework & Metrics
-
-To guarantee continuous quality, Revio 2.0 is benchmarked against the following quantitative thresholds:
-
-| Metric | Target Threshold | Achieved in PoC | Verification Method |
-| :--- | :--- | :--- | :--- |
-| **Aspect Classification Accuracy** | >= 90.0% | **94.2%** | Multi-label confusion matrix across 6 categories |
-| **Crisis Recall (Zero-False-Negative)** | **100.0%** on Critical | **100.0%** | Tested against legal, safety, and fraud test suite |
-| **End-to-End Latency** | < 100 ms (CPU) | **~12 ms** | In-memory python processing |
-| **Guardrail Sanitization Rate** | 100.0% | **100.0%** | Regex test suite on liability phrases |
-
----
-
-## 7. Cloud Deployment Architecture (AWS / Azure)
-
-For production deployment at enterprise scale, Revio 2.0 is designed as a cloud-native microservice:
-
-1. **API Layer:** FastAPI packaged inside lightweight Docker containers deployed on **AWS ECS Fargate** or **Azure Container Apps** with auto-scaling based on CPU/HTTP concurrency.
-2. **Message Broker & Ingestion:** AWS SQS / Azure Service Bus buffering incoming review webhooks from Google Maps, Yelp, and Zomato.
-3. **Database & Storage:**
-   - **PostgreSQL (RDS / Azure Database):** Stores structured review metadata, aspect scores, and audit logs.
-   - **Redis Cache:** In-memory caching for repetitive review signatures and rate limiting.
-4. **Monitoring & Observability:** Prometheus metrics + CloudWatch alerts monitoring average sentiment dips across branches and crisis escalation alerts.
-
----
-
-## 8. 4-Sprint Implementation Roadmap
-
-```
-+---------------------------------------------------------------------------------------+
-| SPRINT 1: Core NLP & Ingestion Pipeline (Weeks 1-2)                                    |
-| • Connect Google Business Profile & Yelp API webhooks                                 |
-| • Deploy Aspect-Based Sentiment Analysis & Negation engine                           |
-| • Establish automated benchmark test harness                                          |
-+---------------------------------------------------------------------------------------+
-| SPRINT 2: Crisis Detector & Guardrail Engine (Weeks 3-4)                              |
-| • Implement 0-100% urgency scoring and threat vector clustering                       |
-| • Configure ticket generation (#REV-XXXX) and Slack/WhatsApp notification webhooks   |
-| • Harden legal liability filters and Pydantic schema validation                       |
-+---------------------------------------------------------------------------------------+
-| SPRINT 3: Multi-Branch Analytics Dashboard (Weeks 5-6)                               |
-| • Build multi-location branch leaderboard & comparative health radar                  |
-| • Implement Role-Based Access Control (Admin, Regional Manager, Branch Advisor)       |
-| • Provide CSV/PDF executive report export                                             |
-+---------------------------------------------------------------------------------------+
-| SPRINT 4: Pilot Deployment & Continuous Learning (Weeks 7-8)                          |
-| • Pilot deployment across 10 partner franchise branches                               |
-| • Capture manager edit logs for DPO (Direct Preference Optimization) fine-tuning     |
-| • Production hardening on AWS/Azure container infrastructure                          |
-+---------------------------------------------------------------------------------------+
-```
-
----
-
-## 9. Conclusion
-
-Revio 2.0 delivers an unassailable technical foundation for Cynbit Technologies. By combining sub-second Aspect-Based Sentiment Analysis with proactive crisis containment, Revio transitions from a standard notification utility into a mission-critical **Enterprise Brand Defense Platform**.
+As a Proof of Concept, Revio 2.0 has specific documented boundaries:
+1. **Sarcasm Detection:** Complex figurative sarcasm (*"I just love waiting two hours for raw chicken"*) may be misclassified without a deep transformer language model.
+2. **Lexicon Coverage:** Highly localized regional slang outside the configured English/Hinglish vocabulary will fall back to rating heuristics.
+3. **Roadmap to Production:**
+   - **Phase 1 (Current PoC):** Deterministic ABSA baseline + safe fallback response generator + Human-in-the-Loop Streamlit dashboard.
+   - **Phase 2 (SLM Integration):** Fine-tune a lightweight DeBERTa-v3-small model on domain-specific Indian hospitality and retail reviews.
+   - **Phase 3 (Enterprise Connectors):** Implement authenticated OAuth2 connectors for Google Business Profile and Yelp API with role-based branch manager permissions.

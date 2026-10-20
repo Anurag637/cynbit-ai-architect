@@ -212,23 +212,36 @@ def generate_benchmark_dataset(count: int = 50) -> List[Dict]:
     return dataset
 
 
-def save_dataset_to_file(filepath: Path = Path("data/sample_reviews.json")) -> List[Dict]:
-    """Generates and saves the benchmark dataset."""
-    filepath.parent.mkdir(parents=True, exist_ok=True)
+def save_dataset_to_file(
+    json_path: Path = Path("data/sample_reviews.json"),
+    csv_path: Path = Path("data/sample_reviews.csv")
+) -> List[Dict]:
+    """Generates and saves the benchmark dataset in both JSON and CSV formats (explicitly labeled synthetic)."""
+    json_path.parent.mkdir(parents=True, exist_ok=True)
     data = generate_benchmark_dataset(count=50)
-    with open(filepath, "w", encoding="utf-8") as f:
+    for r in data:
+        r["is_synthetic"] = True
+        r["date"] = r["timestamp"][:10]
+
+    with open(json_path, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2)
+
+    import pandas as pd
+    df = pd.DataFrame(data)
+    df.to_csv(csv_path, index=False, encoding="utf-8")
     return data
 
 
 def load_dataset(filepath: Path = Path("data/sample_reviews.json")) -> List[Dict]:
     """Loads dataset from disk or generates if missing."""
-    if not filepath.exists():
-        return save_dataset_to_file(filepath)
+    csv_path = Path("data/sample_reviews.csv")
+    if not filepath.exists() or not csv_path.exists():
+        return save_dataset_to_file(filepath, csv_path)
     with open(filepath, "r", encoding="utf-8") as f:
         return json.load(f)
 
 
 if __name__ == "__main__":
     generated = save_dataset_to_file()
-    print(f"Successfully generated {len(generated)} benchmark reviews.")
+    print(f"Successfully generated {len(generated)} synthetic benchmark reviews (JSON & CSV).")
+

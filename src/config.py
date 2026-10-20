@@ -3,8 +3,28 @@ Revio 2.0 Configuration Module
 Contains system constants, aspect taxonomies, crisis rules, and brand voice settings.
 """
 
+import os
 from typing import Dict, List, Set
 from enum import Enum
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load environment configuration if present
+env_path = Path(__file__).resolve().parent.parent / ".env"
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path)
+else:
+    load_dotenv()
+
+# Configurable Brand & Resolution Policy Settings (read from environment, with safe defaults)
+BRAND_NAME: str = os.getenv("BRAND_NAME", "Cynbit Hospitality Group")
+SUPPORT_EMAIL: str = os.getenv("SUPPORT_EMAIL", "care@cynbit.in")
+ESCALATION_EMAIL: str = os.getenv("ESCALATION_EMAIL", "executive-care@cynbit.in")
+SUPPORT_PHONE: str = os.getenv("SUPPORT_PHONE", "+91-89479-62667")
+
+# Optional LLM API Keys
+GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
 
 
 class Sentiment(str, Enum):
@@ -15,10 +35,14 @@ class Sentiment(str, Enum):
 
 
 class CrisisLevel(str, Enum):
-    LOW = "LOW"             # Routine review, score 0-35
-    MEDIUM = "MEDIUM"       # Moderate dissatisfaction, score 36-65
-    HIGH = "HIGH"           # Significant grievance / churn risk, score 66-84
-    CRITICAL = "CRITICAL"   # Severe legal, regulatory, health, or viral PR threat, score 85-100
+    """
+    Triage risk tier based on heuristic screening estimation.
+    NOTE: Risk scores are priority-ranking screening estimates, not calibrated statistical probabilities.
+    """
+    LOW = "LOW"             # Routine feedback, score 0-35
+    MEDIUM = "MEDIUM"       # Moderate dissatisfaction, score 36-59
+    HIGH = "HIGH"           # Elevated grievance / risk flag, score 60-79
+    CRITICAL = "CRITICAL"   # Severe legal, health, fraud, or safety concern, score 80-100
 
 
 class BrandPersona(str, Enum):
@@ -28,35 +52,38 @@ class BrandPersona(str, Enum):
     EXECUTIVE_ESCALATION = "Executive Escalation"
 
 
-# Standard Aspect Taxonomy for Multi-Location Businesses
+# Standard Aspect Taxonomy for Multi-Location Businesses (including bilingual & Hinglish variations)
 ASPECT_CATEGORIES: Dict[str, List[str]] = {
     "Customer Service": [
         "staff", "service", "waiter", "manager", "reception", "crew", "employee", 
-        "behavior", "rude", "polite", "friendly", "attitude", "unprofessional", "helpful"
+        "behavior", "rude", "polite", "friendly", "attitude", "unprofessional", "helpful",
+        "battameez", "batameez", "courteous", "hospitality", "attentive"
     ],
     "Product & Food Quality": [
         "food", "taste", "dish", "meal", "quality", "fresh", "stale", "cold", "delicious",
-        "flavor", "portion", "ingredient", "raw", "overcooked", "burnt", "item", "product"
+        "flavor", "portion", "ingredient", "raw", "overcooked", "burnt", "item", "product",
+        "khana", "swad", "tasty", "yummy", "lajawab", "bakwas"
     ],
     "Speed & Turnaround Time": [
         "time", "delay", "slow", "fast", "quick", "wait", "waiting", "hour", "minutes",
-        "late", "prompt", "turnaround", "hurry", "queue", "line"
+        "late", "prompt", "turnaround", "hurry", "queue", "line", "deri", "jaldi"
     ],
     "Cleanliness & Ambience": [
         "clean", "dirty", "hygiene", "smell", "restroom", "washroom", "table", "ac",
-        "noise", "atmosphere", "ambience", "decor", "messy", "cockroach", "pest", "dusty"
+        "noise", "atmosphere", "ambience", "decor", "messy", "cockroach", "pest", "dusty",
+        "saaf", "ganda", "unhygienic", "badbu"
     ],
     "Pricing & Value": [
         "price", "expensive", "cheap", "cost", "value", "worth", "overpriced", "money",
-        "affordable", "overcharge", "rip-off", "bill", "charge"
+        "affordable", "overcharge", "rip-off", "bill", "charge", "mehnga", "sasta", "daam"
     ],
     "Billing & Transactions": [
         "billing", "receipt", "payment", "card", "upi", "refund", "extra charge",
-        "hidden fee", "invoice", "overbilled", "scam"
+        "hidden fee", "invoice", "overbilled", "scam", "hisab"
     ]
 }
 
-# Crisis Trigger Keywords and their Risk Weights
+# Crisis Trigger Keywords and their Risk Weights (Screening Index)
 CRISIS_TRIGGERS: Dict[str, int] = {
     # Legal & Regulatory (High Risk)
     "lawyer": 40,
@@ -65,9 +92,11 @@ CRISIS_TRIGGERS: Dict[str, int] = {
     "lawsuit": 45,
     "court": 35,
     "consumer court": 45,
+    "consumer forum": 45,
     "police": 45,
     "fir": 45,
     "complaint to authorities": 40,
+    "fssai": 45,
 
     # Health & Safety Violations (Critical Risk)
     "food poisoning": 50,
@@ -81,6 +110,9 @@ CRISIS_TRIGGERS: Dict[str, int] = {
     "maggot": 50,
     "expired": 35,
     "contaminated": 45,
+    "zehar": 50,
+    "poison": 50,
+    "infection": 40,
 
     # Severe Financial & Fraud (High Risk)
     "fraud": 45,
@@ -90,6 +122,9 @@ CRISIS_TRIGGERS: Dict[str, int] = {
     "theft": 40,
     "robbery": 45,
     "unauthorized charge": 40,
+    "chori": 40,
+    "dhoka": 40,
+    "thug": 40,
 
     # Discrimination & Abuse (Critical Risk)
     "harassment": 45,
@@ -98,16 +133,23 @@ CRISIS_TRIGGERS: Dict[str, int] = {
     "racist": 45,
     "casteist": 45,
     "abuse": 40,
-    "threatened": 45
+    "threatened": 45,
+    "gunda": 45,
+    "physical": 40
 }
 
-# Brand Guardrails: Forbidden phrases that create enterprise legal liability
+# Brand Guardrails: Forbidden phrases that invent concessions, unauthorized refunds, or legal liability
 FORBIDDEN_PHRASES: Set[str] = {
     "we admit we were at fault",
     "our team made an illegal error",
     "we will pay you to delete this",
     "here is 100% cashback guaranteed",
-    "it was our cook's mistake"
+    "it was our cook's mistake",
+    "we have refunded your full amount",
+    "a full refund has already been credited",
+    "we have credited your bank account",
+    "free food on your next visit",
+    "we guarantee 100% compensation"
 }
 
 # Default Mock Locations

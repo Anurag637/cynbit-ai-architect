@@ -1,6 +1,14 @@
 """
 Revio 2.0 Aspect-Based Sentiment Analysis (ABSA) Engine
 Extracts granular operational aspects, polarity scores, emotions, and root cause drivers.
+
+Design Philosophy & Baseline Notes:
+- Implementation: Deterministic rule-based lexical engine combining aspect-trigger taxonomies,
+  contrastive clause splitting, contextual negation inversion, and lexicon polarity matching.
+- Rationale: Provides sub-millisecond latency, zero external API costs, deterministic reproducibility,
+  and full interpretability for edge deployment in high-throughput review pipelines.
+- Known Limitations: Does not detect subtle double-entendre sarcasm, highly metaphorical phrasing,
+  or slang outside the configured lexicon without an upstream fine-tuned Transformer (e.g. DeBERTa/BERT).
 """
 
 import re
@@ -12,7 +20,8 @@ POSITIVE_LEXICON = {
     "delicious", "amazing", "great", "excellent", "best", "exceptional", "friendly",
     "polite", "quick", "fast", "prompt", "clean", "hygienic", "spotless", "loved",
     "awesome", "wonderful", "warm", "helpful", "affordable", "consistent", "superb",
-    "generous", "fresh", "crisp", "recommend", "attentive", "relaxing", "pristine"
+    "generous", "fresh", "crisp", "recommend", "attentive", "relaxing", "pristine",
+    "lajawab", "shandar", "badhiya", "tasty", "yummy", "courteous", "perfect", "10/10"
 }
 
 NEGATIVE_LEXICON = {
@@ -20,15 +29,20 @@ NEGATIVE_LEXICON = {
     "stale", "tasteless", "dirty", "unhygienic", "smell", "expensive", "overpriced",
     "unauthorized", "scam", "fraud", "unacceptable", "ignored", "spilled", "melted",
     "poisoning", "sick", "cockroach", "disappointed", "abusive", "harassed", "leaking",
-    "soggy", "confusing", "overcharged", "cheated", "gross", "crashed"
+    "soggy", "confusing", "overcharged", "cheated", "gross", "crashed", "bakwas",
+    "battameez", "batameez", "ganda", "kharab", "mehnga", "badbu", "chori", "dhoka"
+}
+
+NEGATION_TERMS = {
+    "not", "never", "no", "hardly", "scarcely", "barely", "neither", "nor", "nahi", "mat", "na"
 }
 
 EMOTION_KEYWORDS = {
-    "Anger / Outrage": ["abusive", "harassed", "fraud", "scam", "police", "lawyer", "lawsuit", "cheated", "sue"],
-    "Severe Disgust": ["cockroach", "rat", "hair in food", "maggot", "vomiting", "poisoning", "gross", "dirty"],
-    "Frustration / Impatience": ["delay", "waiting", "slow", "ignored", "hour", "minutes", "late", "crashed"],
-    "Delight / Enthusiasm": ["amazing", "exceptional", "loved", "superb", "best", "pristine", "10/10", "world-class"],
-    "Satisfaction / Gratitude": ["good", "great", "delicious", "fresh", "polite", "clean", "recommend", "helpful"]
+    "Anger / Outrage": ["abusive", "harassed", "fraud", "scam", "police", "lawyer", "lawsuit", "cheated", "sue", "battameez", "gunda"],
+    "Severe Disgust": ["cockroach", "rat", "hair in food", "maggot", "vomiting", "poisoning", "gross", "dirty", "ganda", "badbu", "zehar"],
+    "Frustration / Impatience": ["delay", "waiting", "slow", "ignored", "hour", "minutes", "late", "crashed", "deri"],
+    "Delight / Enthusiasm": ["amazing", "exceptional", "loved", "superb", "best", "pristine", "10/10", "world-class", "lajawab"],
+    "Satisfaction / Gratitude": ["good", "great", "delicious", "fresh", "polite", "clean", "recommend", "helpful", "badhiya"]
 }
 
 
@@ -82,14 +96,14 @@ class ReviewAnalysis:
 
 
 class AspectSentimentAnalyzer:
-    """Production ABSA engine with zero external API latency dependency."""
+    """Production ABSA baseline engine with zero external API latency dependency."""
 
     def __init__(self):
         self.aspect_taxonomy = ASPECT_CATEGORIES
 
     def _split_into_clauses(self, text: str) -> List[str]:
-        # Split on sentence boundaries and discourse markers (but, however, although, yet, while)
-        clauses = re.split(r'[.!?;\n]|(?:\b(?:but|however|although|yet|while|though)\b)', text, flags=re.IGNORECASE)
+        """Split on punctuation and contrastive discourse markers."""
+        clauses = re.split(r'[.!?;\n]|(?:\b(?:but|however|although|yet|while|though|lekin|par|magar)\b)', text, flags=re.IGNORECASE)
         return [c.strip() for c in clauses if c.strip()]
 
     def analyze_aspects(self, text: str) -> List[AspectResult]:
@@ -106,7 +120,7 @@ class AspectSentimentAnalyzer:
             matched_clause = ""
             for clause in clauses:
                 clause_lower = clause.lower()
-                if any(kw in clause_lower for kw in matched_keywords):
+                if any(re.search(r'\b' + re.escape(kw) + r'\b', clause_lower) for kw in matched_keywords):
                     matched_clause = clause
                     break
 
@@ -118,14 +132,14 @@ class AspectSentimentAnalyzer:
             pos_matches = clause_tokens.intersection(POSITIVE_LEXICON)
             neg_matches = clause_tokens.intersection(NEGATIVE_LEXICON)
 
-            # Check for negation words within 3 tokens of positive/negative words
-            has_negation = bool(re.search(r'\b(not|never|no|hardly|scarcely|barely)\b', matched_clause.lower()))
+            # Check for negation words within the clause
+            has_negation = any(neg in clause_tokens for neg in NEGATION_TERMS)
 
             pos_count = len(pos_matches)
             neg_count = len(neg_matches)
 
             if has_negation:
-                # Invert sentiment polarity on negation
+                # Invert sentiment polarity on negation (e.g. "not clean" -> negative)
                 pos_count, neg_count = neg_count, pos_count
 
             if pos_count > neg_count:
@@ -158,7 +172,6 @@ class AspectSentimentAnalyzer:
     def identify_root_cause(self, text: str, aspects: List[AspectResult], star_rating: int) -> str:
         negative_aspects = [a for a in aspects if a.sentiment == Sentiment.NEGATIVE]
         if negative_aspects:
-            # Sort by lowest score
             worst = min(negative_aspects, key=lambda a: a.score)
             return f"Negative Friction in {worst.category} (Mentioned: {', '.join(worst.keywords[:2])})"
 
@@ -181,7 +194,6 @@ class AspectSentimentAnalyzer:
         if aspects:
             compound_score = sum(a.score for a in aspects) / len(aspects)
         else:
-            # Fallback to rating heuristic
             compound_score = (star_rating - 3) / 2.0
 
         # Adjust score with star rating signal

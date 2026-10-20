@@ -1,10 +1,17 @@
 """
 Revio 2.0 Crisis Detection & Urgency Triage Engine
-Evaluates legal liabilities, health & safety violations, and viral PR threats.
+Evaluates legal liabilities, health & safety violations, fraud allegations, and viral PR threats.
+
+Screening Philosophy & Guardrail Notes:
+- Scores represent heuristic screening estimates (0-100) calibrated for high recall on critical risks,
+  ensuring severe complaints receive immediate human manager escalation.
+- Scores are NOT frequentist probabilities and should not be presented as calibrated statistical likelihoods.
+- High recall design minimizes critical false negatives, but may occasionally flag metaphorical frustration
+  (e.g., 'this bill gave me a heart attack'), which is why Human-in-the-Loop review is mandatory.
 """
 
 import re
-from typing import Dict, List, Tuple
+from typing import Dict, List
 from src.config import CRISIS_TRIGGERS, CrisisLevel
 
 
@@ -15,6 +22,7 @@ class CrisisEvaluation:
         crisis_level: CrisisLevel,
         threat_vectors: List[str],
         matched_triggers: List[str],
+        flag_reasons: List[str],
         escalation_target: str,
         sla_window: str,
         recommended_action: str
@@ -23,6 +31,7 @@ class CrisisEvaluation:
         self.crisis_level = crisis_level
         self.threat_vectors = threat_vectors
         self.matched_triggers = matched_triggers
+        self.flag_reasons = flag_reasons
         self.escalation_target = escalation_target
         self.sla_window = sla_window
         self.recommended_action = recommended_action
@@ -33,14 +42,16 @@ class CrisisEvaluation:
             "crisis_level": self.crisis_level.value,
             "threat_vectors": self.threat_vectors,
             "matched_triggers": self.matched_triggers,
+            "flag_reasons": self.flag_reasons,
             "escalation_target": self.escalation_target,
             "sla_window": self.sla_window,
-            "recommended_action": self.recommended_action
+            "recommended_action": self.recommended_action,
+            "is_screening_estimate": True
         }
 
 
 class CrisisDetector:
-    """Enterprise risk scoring engine with deterministic rule weights and threat vector clustering."""
+    """Enterprise risk scoring engine with deterministic rule weights and evidence-matched vector clustering."""
 
     def __init__(self):
         self.triggers = CRISIS_TRIGGERS
@@ -50,6 +61,7 @@ class CrisisDetector:
         score = 0
         matched: List[str] = []
         vectors: List[str] = []
+        flag_reasons: List[str] = []
 
         # 1. Base score from star rating
         if star_rating == 1:
@@ -65,23 +77,37 @@ class CrisisDetector:
                 score += weight
                 matched.append(trigger)
 
-        # 3. Categorize threat vectors
-        legal_kws = ["lawyer", "legal action", "sue", "lawsuit", "court", "consumer court", "police", "fir"]
-        health_kws = ["food poisoning", "vomiting", "hospital", "sick", "illness", "cockroach", "rat", "maggot", "contaminated"]
-        fraud_kws = ["fraud", "scam", "cheating", "stole", "theft", "unauthorized charge"]
-        abuse_kws = ["harassment", "assault", "discriminate", "racist", "casteist", "abuse", "threatened"]
+        # 3. Categorize threat vectors with matched evidence
+        legal_kws = ["lawyer", "legal action", "sue", "lawsuit", "court", "consumer court", "consumer forum", "police", "fir", "fssai"]
+        health_kws = ["food poisoning", "vomiting", "hospital", "sick", "illness", "cockroach", "rat", "maggot", "contaminated", "zehar", "poison", "infection", "expired"]
+        fraud_kws = ["fraud", "scam", "cheating", "stole", "theft", "unauthorized charge", "chori", "dhoka", "thug", "robbery"]
+        abuse_kws = ["harassment", "assault", "discriminate", "racist", "casteist", "abuse", "threatened", "gunda"]
         viral_kws = ["twitter", "viral", "instagram", "post online", "municipal", "media", "news"]
 
-        if any(re.search(r'\b' + re.escape(k) + r'\b', lower_text) for k in legal_kws):
+        matched_legal = [k for k in legal_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        if matched_legal:
             vectors.append("Legal & Regulatory Action")
-        if any(re.search(r'\b' + re.escape(k) + r'\b', lower_text) for k in health_kws):
+            flag_reasons.append(f"Legal Escalation: customer mentioned legal remedies ({', '.join(matched_legal)})")
+
+        matched_health = [k for k in health_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        if matched_health:
             vectors.append("Health, Hygiene & Safety Violation")
-        if any(re.search(r'\b' + re.escape(k) + r'\b', lower_text) for k in fraud_kws):
+            flag_reasons.append(f"Health & Safety Hazard: health symptoms or contamination mentioned ({', '.join(matched_health)})")
+
+        matched_fraud = [k for k in fraud_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        if matched_fraud:
             vectors.append("Financial Integrity & Fraud Allegation")
-        if any(re.search(r'\b' + re.escape(k) + r'\b', lower_text) for k in abuse_kws):
+            flag_reasons.append(f"Financial / Fraud Allegation: billing integrity compromised ({', '.join(matched_fraud)})")
+
+        matched_abuse = [k for k in abuse_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        if matched_abuse:
             vectors.append("Harassment & Human Safety")
-        if any(re.search(r'\b' + re.escape(k) + r'\b', lower_text) for k in viral_kws):
+            flag_reasons.append(f"Safety & Discrimination: abusive behavior or harassment reported ({', '.join(matched_abuse)})")
+
+        matched_viral = [k for k in viral_kws if re.search(r'\b' + re.escape(k) + r'\b', lower_text)]
+        if matched_viral:
             vectors.append("Public Viral PR Exposure")
+            flag_reasons.append(f"Viral Escalation: public media or social platform exposure threatened ({', '.join(matched_viral)})")
 
         # Cap score between 0 and 100
         risk_score = min(100, max(0, score))
@@ -91,28 +117,32 @@ class CrisisDetector:
             crisis_level = CrisisLevel.CRITICAL
             escalation_target = "Executive Incident Response Team & Regional General Manager"
             sla_window = "< 15 Minutes (Immediate Containment)"
-            recommended_action = "Initiate private direct call by Store GM, freeze affected station/batch, issue formal dispute incident ticket, and halt automated public post."
+            recommended_action = "Initiate private direct outreach by Store GM, inspect hygiene/batch logs, log internal incident ticket, and route to Human Approval before public reply."
         elif risk_score >= 60 or vectors:
             crisis_level = CrisisLevel.HIGH
             escalation_target = "Branch Operations Manager & Quality Assurance Lead"
             sla_window = "< 2 Hours"
-            recommended_action = "Send personalized empathetic response with dedicated resolution ticket ID and private escalation phone line."
+            recommended_action = "Send personalized empathetic response with private escalation channel and hold for manager review."
         elif risk_score >= 35 or star_rating <= 2:
             crisis_level = CrisisLevel.MEDIUM
             escalation_target = "Guest Relations Specialist"
             sla_window = "< 6 Hours"
-            recommended_action = "Standard service recovery message with feedback invitation and retention voucher."
+            recommended_action = "Standard service recovery response with invitation to share details privately."
         else:
             crisis_level = CrisisLevel.LOW
-            escalation_target = "Automated AI Brand Agent"
+            escalation_target = "Automated AI Brand Agent / Customer Support Desk"
             sla_window = "< 24 Hours"
-            recommended_action = "Deploy appreciative brand response with loyalty reinforcement."
+            recommended_action = "Standard appreciative response thanking customer and encouraging return visit."
+
+        if not flag_reasons:
+            flag_reasons.append("Routine customer review without critical risk triggers detected.")
 
         return CrisisEvaluation(
             risk_score=risk_score,
             crisis_level=crisis_level,
             threat_vectors=vectors if vectors else ["Routine Feedback"],
             matched_triggers=matched,
+            flag_reasons=flag_reasons,
             escalation_target=escalation_target,
             sla_window=sla_window,
             recommended_action=recommended_action

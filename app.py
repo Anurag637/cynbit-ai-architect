@@ -1,8 +1,12 @@
 """
-Revio 2.0: Autonomous Multi-Agent Reputation & Crisis Intelligence Engine
+Revio 2.0: AI-Powered Review Intelligence & Crisis Detection System
 Interactive Enterprise Dashboard for Cynbit Technologies
+Author: Anurag Pandey (AI/ML Engineer Intern Assessment)
 """
 
+import os
+import json
+import io
 import streamlit as st
 import pandas as pd
 import plotly.express as px
@@ -14,7 +18,18 @@ from src.crisis_detector import CrisisDetector
 from src.response_generator import ResponseGenerator
 from src.analytics import EnterpriseAnalyticsEngine
 from src.data_generator import load_dataset
-from src.config import BrandPersona, DEFAULT_BRANCHES, CrisisLevel
+from src.ingestion import validate_and_parse_dataframe, IngestionError
+from src.config import (
+    BrandPersona,
+    DEFAULT_BRANCHES,
+    CrisisLevel,
+    BRAND_NAME,
+    SUPPORT_EMAIL,
+    ESCALATION_EMAIL,
+    SUPPORT_PHONE,
+    GEMINI_API_KEY,
+    OPENAI_API_KEY
+)
 
 # Page Configuration
 st.set_page_config(
@@ -27,25 +42,25 @@ st.set_page_config(
 # Custom Styling (Cynbit Brand Identity)
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
     
     .cynbit-header {
-        background: linear-gradient(135deg, #004D53 0%, #006067 50%, #7C3AED 100%);
+        background: linear-gradient(135deg, #004D53 0%, #006067 50%, #4338CA 100%);
         padding: 2.2rem 2.5rem;
-        border-radius: 1.5rem;
+        border-radius: 1.2rem;
         color: white;
-        margin-bottom: 2rem;
+        margin-bottom: 1.5rem;
         box-shadow: 0 10px 30px rgba(0, 96, 103, 0.18);
     }
     
     .metric-card {
         background: white;
-        padding: 1.3rem 1.5rem;
-        border-radius: 1.2rem;
+        padding: 1.2rem 1.4rem;
+        border-radius: 1rem;
         border: 1px solid #E2E8F0;
         box-shadow: 0 4px 12px rgba(0,0,0,0.03);
         transition: transform 0.2s ease;
@@ -85,7 +100,7 @@ st.markdown("""
     .aspect-pill-pos {
         background-color: #ECFDF5;
         color: #047857;
-        padding: 2px 10px;
+        padding: 3px 10px;
         border-radius: 6px;
         font-weight: 600;
         font-size: 0.75rem;
@@ -94,21 +109,39 @@ st.markdown("""
     .aspect-pill-neg {
         background-color: #FEF2F2;
         color: #B91C1C;
-        padding: 2px 10px;
+        padding: 3px 10px;
         border-radius: 6px;
         font-weight: 600;
         font-size: 0.75rem;
         border: 1px solid #FECACA;
     }
-    
-    .ticket-badge {
-        font-family: monospace;
-        font-weight: bold;
-        background: #F1F5F9;
-        color: #006067;
-        padding: 3px 8px;
+    .aspect-pill-neu {
+        background-color: #F1F5F9;
+        color: #475569;
+        padding: 3px 10px;
         border-radius: 6px;
+        font-weight: 600;
+        font-size: 0.75rem;
         border: 1px solid #CBD5E1;
+    }
+    
+    .provenance-tag {
+        display: inline-block;
+        padding: 6px 14px;
+        border-radius: 8px;
+        font-size: 0.82rem;
+        font-weight: 600;
+        margin-bottom: 1rem;
+    }
+    .provenance-synthetic {
+        background: #FFFBEB;
+        color: #B45309;
+        border: 1px solid #FCD34D;
+    }
+    .provenance-user {
+        background: #ECFDF5;
+        color: #047857;
+        border: 1px solid #6EE7B7;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -125,46 +158,142 @@ def get_engines():
 
 analyzer, crisis_detector, response_gen, analytics_engine = get_engines()
 
-# Load and process dataset
+
+# -----------------------------------------------------------------------------
+# SIDEBAR: DATA INGESTION & DATASET CONTROLLER
+# -----------------------------------------------------------------------------
+with st.sidebar:
+    st.markdown("### ⚡ Revio 2.0 Ingestion")
+    st.caption("Upload multi-channel customer reviews or load the benchmark suite.")
+
+    data_source = st.radio(
+        "Select Data Source:",
+        ["Synthetic Benchmark Suite (50 Reviews)", "Upload Custom CSV Dataset"],
+        index=0
+    )
+
+    active_raw_reviews = []
+    is_dataset_synthetic = True
+    upload_meta = {}
+
+    if data_source == "Synthetic Benchmark Suite (50 Reviews)":
+        active_raw_reviews = load_dataset()
+        is_dataset_synthetic = True
+        st.info("ℹ️ Built-in benchmark dataset loaded (50 synthetic multi-location reviews labeled for reproducible testing).")
+    else:
+        uploaded_file = st.file_uploader(
+            "Upload Review CSV (Expected: review_text, star_rating, branch_name):",
+            type=["csv"]
+        )
+        if uploaded_file is not None:
+            try:
+                uploaded_df = pd.read_csv(uploaded_file)
+                parsed_records, meta = validate_and_parse_dataframe(uploaded_df, is_synthetic=False)
+                active_raw_reviews = parsed_records
+                is_dataset_synthetic = False
+                upload_meta = meta
+                st.success(f"✅ Ingested {meta['valid_rows_retained']} valid rows ({meta['dropped_rows']} malformed dropped).")
+            except IngestionError as e:
+                st.error(f"Schema Validation Error: {e}")
+                st.warning("Falling back to synthetic benchmark dataset.")
+                active_raw_reviews = load_dataset()
+                is_dataset_synthetic = True
+            except Exception as e:
+                st.error(f"Failed to read file: {e}")
+                active_raw_reviews = load_dataset()
+                is_dataset_synthetic = True
+        else:
+            st.info("Please upload a CSV or download the template below.")
+            sample_template = pd.DataFrame([
+                {"review_text": "Food was delicious and service was super fast!", "star_rating": 5, "branch_name": "Jaipur Malviya Nagar Flagship", "date": "2026-10-15"},
+                {"review_text": "Wait time was 50 minutes and waiter was rude.", "star_rating": 1, "branch_name": "Gurugram CyberCity Premier", "date": "2026-10-16"}
+            ])
+            st.download_button(
+                "📥 Download CSV Template",
+                data=sample_template.to_csv(index=False),
+                file_name="revio_sample_template.csv",
+                mime="text/csv"
+            )
+            active_raw_reviews = load_dataset()
+            is_dataset_synthetic = True
+
+    st.markdown("---")
+    st.markdown("### ⚙️ System Configuration")
+    st.caption("Configurable brand parameters & environment variables.")
+    st.text(f"Brand: {BRAND_NAME}")
+    st.text(f"Support Email: {SUPPORT_EMAIL}")
+    st.text(f"Phone: {SUPPORT_PHONE}")
+
+    has_gemini = bool(GEMINI_API_KEY)
+    has_openai = bool(OPENAI_API_KEY)
+    if has_gemini:
+        st.success("🟢 Gemini API Key detected in .env")
+    elif has_openai:
+        st.success("🟢 OpenAI API Key detected in .env")
+    else:
+        st.info("⚪ Operating in 100% Offline Fallback Mode (Deterministic Policy Engine)")
+
+
+# Process active dataset
 @st.cache_data
-def get_processed_data():
-    raw = load_dataset()
+def process_active_dataset(raw_data_json: str):
+    raw = json.loads(raw_data_json)
     enriched = analytics_engine.process_reviews(raw)
     summary = analytics_engine.generate_executive_summary(enriched)
     return enriched, summary
 
-enriched_reviews, executive_summary = get_processed_data()
+enriched_reviews, executive_summary = process_active_dataset(json.dumps(active_raw_reviews))
 
-# Header Banner
+
+# -----------------------------------------------------------------------------
+# MAIN HEADER BANNER
+# -----------------------------------------------------------------------------
 st.markdown("""
 <div class="cynbit-header">
     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
         <div>
             <span style="text-transform: uppercase; letter-spacing: 0.25em; font-size: 0.75rem; opacity: 0.85; font-weight: 800;">
-                CYNBIT TECHNOLOGIES • ENTERPRISE SAAS SUITE
+                CYNBIT TECHNOLOGIES • AI/ML ENGINEERING ASSESSMENT
             </span>
-            <h1 style="margin: 0.4rem 0 0.2rem 0; font-size: 2.3rem; font-weight: 900; letter-spacing: -0.03em;">
+            <h1 style="margin: 0.4rem 0 0.2rem 0; font-size: 2.2rem; font-weight: 900; letter-spacing: -0.03em;">
                 Revio 2.0 Intelligence Hub
             </h1>
-            <p style="margin: 0; font-size: 0.95rem; opacity: 0.9; max-width: 650px;">
-                Autonomous Multi-Agent Reputation Defense, Aspect-Based Sentiment Analysis & Crisis Escalation Engine.
+            <p style="margin: 0; font-size: 0.95rem; opacity: 0.9; max-width: 680px;">
+                AI-Powered Multi-Location Review Intelligence, Aspect-Based Sentiment Decomposition & Crisis Interception Engine.
             </p>
         </div>
         <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 0.8rem 1.4rem; border-radius: 1rem; border: 1px solid rgba(255,255,255,0.25); text-align: right;">
-            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.8;">CANDIDATE SUBMISSION</div>
+            <div style="font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.15em; opacity: 0.85;">CANDIDATE SUBMISSION</div>
             <div style="font-weight: 800; font-size: 1.05rem;">Anurag Pandey</div>
-            <div style="font-size: 0.75rem; opacity: 0.85;">AI/ML Engineer Intern Assessment</div>
+            <div style="font-size: 0.75rem; opacity: 0.85;">AI Opportunity & Technical Proof of Concept</div>
         </div>
     </div>
 </div>
 """, unsafe_allow_html=True)
 
-# Main Navigation Tabs
+# Provenance notification
+if is_dataset_synthetic:
+    st.markdown("""
+    <div class="provenance-tag provenance-synthetic">
+        ⚠️ <b>Data Provenance: Synthetic Demonstration Dataset</b> — 50 simulated reviews covering health crises, fraud, Hinglish, negations, and service bottlenecks. Clearly labeled synthetic.
+    </div>
+    """, unsafe_allow_html=True)
+else:
+    st.markdown(f"""
+    <div class="provenance-tag provenance-user">
+        📁 <b>Data Provenance: User Uploaded Dataset</b> — {len(enriched_reviews)} verified records analyzed live.
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# -----------------------------------------------------------------------------
+# MAIN NAVIGATION TABS
+# -----------------------------------------------------------------------------
 tab1, tab2, tab3, tab4 = st.tabs([
     "📊 Executive Command Center",
     "⚡ Interactive AI Review Lab",
     "🏢 Multi-Location Deep-Dive",
-    "📑 Strategic Architecture & Reports"
+    "📑 Strategic Architecture & Evaluation"
 ])
 
 
@@ -172,16 +301,16 @@ tab1, tab2, tab3, tab4 = st.tabs([
 # TAB 1: EXECUTIVE COMMAND CENTER
 # =============================================================================
 with tab1:
-    st.subheader("Enterprise Health & Reputation Radar")
-    st.caption("Live aggregate metrics across all registered regional branches and external review platforms.")
+    st.subheader("Enterprise Reputation & Risk Radar")
+    st.caption("Empirical KPIs computed from the currently loaded review dataset.")
 
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Total Monitored Reviews</div>
+            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Total Analyzed Reviews</div>
             <div style="color: #0F172A; font-size: 2rem; font-weight: 900; margin-top: 0.2rem;">{executive_summary.get('total_reviews', 0)}</div>
-            <div style="color: #059669; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">↑ Real-time sync across 4 channels</div>
+            <div style="color: #059669; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">Processed via Revio ABSA pipeline</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -189,10 +318,10 @@ with tab1:
         avg_rt = executive_summary.get('avg_rating', 0.0)
         st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Network Average Rating</div>
+            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Network Average Rating</div>
             <div style="color: #0F172A; font-size: 2rem; font-weight: 900; margin-top: 0.2rem;">{avg_rt} ★</div>
             <div style="color: {'#059669' if avg_rt >= 4.0 else '#D97706'}; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">
-                Target Benchmark: 4.50 ★
+                {'Above 4.0 Benchmark' if avg_rt >= 4.0 else 'Under Operational Target'}
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -201,9 +330,9 @@ with tab1:
         avg_sent = executive_summary.get('avg_sentiment', 0.0)
         st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Polarity Sentiment Index</div>
+            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">Net Polarity Index</div>
             <div style="color: #006067; font-size: 2rem; font-weight: 900; margin-top: 0.2rem;">{avg_sent:+.2f}</div>
-            <div style="color: #64748B; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">Scale: -1.0 (Worst) to +1.0 (Best)</div>
+            <div style="color: #64748B; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">Calculated compound polarity (-1 to +1)</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -212,9 +341,9 @@ with tab1:
         cr_pct = executive_summary.get('crisis_pct', 0.0)
         st.markdown(f"""
         <div class="metric-card">
-            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">Crisis Reviews Intercepted</div>
+            <div style="color: #64748B; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;">High / Critical Crisis Reviews</div>
             <div style="color: #DC2626; font-size: 2rem; font-weight: 900; margin-top: 0.2rem;">{cr_cnt} <span style="font-size: 1rem; color: #64748B;">({cr_pct}%)</span></div>
-            <div style="color: #DC2626; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">SLA window: &lt; 15 mins containment</div>
+            <div style="color: #DC2626; font-size: 0.75rem; font-weight: 600; margin-top: 0.2rem;">Heuristic screening triage flags</div>
         </div>
         """, unsafe_allow_html=True)
 
@@ -224,8 +353,8 @@ with tab1:
     c_left, c_right = st.columns([6, 5])
 
     with c_left:
-        st.markdown("##### 📌 Granular Aspect Health Radar")
-        st.caption("Net sentiment health scores across key operational facets.")
+        st.markdown("##### 📌 Granular Aspect Health Breakdown")
+        st.caption("Net sentiment score and volume across 6 key operational aspects.")
         aspect_data = executive_summary.get("aspect_health", {})
         if aspect_data:
             aspect_names = list(aspect_data.keys())
@@ -236,7 +365,7 @@ with tab1:
                 x=avg_scores,
                 y=aspect_names,
                 orientation='h',
-                labels={'x': 'Net Sentiment Score (-1.0 to +1.0)', 'y': 'Operational Aspect'},
+                labels={'x': 'Net Sentiment Score (-1.0 Negative to +1.0 Positive)', 'y': 'Operational Aspect'},
                 color=avg_scores,
                 color_continuous_scale=['#EF4444', '#F59E0B', '#10B981'],
                 text=[f"{s:+.2f} ({m} mentions)" for s, m in zip(avg_scores, mentions)]
@@ -249,8 +378,8 @@ with tab1:
             st.plotly_chart(fig_bar, use_container_width=True)
 
     with c_right:
-        st.markdown("##### 🌐 Channel & Sentiment Distribution")
-        st.caption("Review volume broken down by platform and emotional polarity.")
+        st.markdown("##### 🌐 Sentiment & Platform Distribution")
+        st.caption("Distribution of emotional polarity across all uploaded records.")
         sent_dist = executive_summary.get("sentiment_distribution", {})
         if sent_dist:
             fig_pie = px.pie(
@@ -273,7 +402,7 @@ with tab1:
 
     st.markdown("---")
     st.markdown("##### 🏆 Multi-Branch Comparative Performance Table")
-    st.caption("Ranked by average rating and net aspect score to uncover operational bottlenecks.")
+    st.caption("Ranked by average star rating, net aspect sentiment, and crisis incidence rate.")
     
     branch_rows = executive_summary.get("branch_rankings", [])
     if branch_rows:
@@ -298,15 +427,40 @@ with tab1:
             use_container_width=True
         )
 
+    # Export Section
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("##### 📥 Export Analyzed Dataset")
+    st.caption("Download the complete dataset enriched with ABSA tags, crisis classifications, and threat vectors.")
+
+    export_df = pd.DataFrame(enriched_reviews)
+    # Flatten aspects for clean CSV representation
+    export_df["detected_aspects_list"] = export_df["aspects"].apply(
+        lambda asps: ", ".join([f"{a['category']} ({a['sentiment']})" for a in asps]) if asps else "None"
+    )
+    cols_to_export = [
+        "id", "date", "customer_name", "branch_name", "platform",
+        "star_rating", "review_text", "overall_sentiment", "compound_score",
+        "detected_aspects_list", "risk_score", "crisis_level", "is_crisis", "primary_emotion"
+    ]
+    cols_present = [c for c in cols_to_export if c in export_df.columns]
+    csv_bytes = export_df[cols_present].to_csv(index=False).encode("utf-8")
+
+    st.download_button(
+        label="📥 Download Analyzed Results (CSV)",
+        data=csv_bytes,
+        file_name=f"revio_analyzed_reviews_{datetime.now().strftime('%Y%m%d_%H%M%S')}.csv",
+        mime="text/csv"
+    )
+
 
 # =============================================================================
 # TAB 2: INTERACTIVE AI REVIEW LAB (PLAYGROUND)
 # =============================================================================
 with tab2:
-    st.subheader("Interactive AI Review Analysis & Response Synthesizer")
+    st.subheader("Interactive AI Review Analysis & Human-in-the-Loop Studio")
     st.caption("Test the Aspect-Based Sentiment, Crisis Scoring, and Persona-Calibrated Response pipeline in real time.")
 
-    # Sample Preset Selectors
+    # Sample Presets
     presets = {
         "Custom Input": {
             "text": "",
@@ -326,7 +480,13 @@ with tab2:
             "name": "Meera Sen",
             "branch": "Jaipur Pratap Nagar Tech Hub"
         },
-        "⏳ Mixed: Delicious Food but Unbearable 55-Min Waiting Time": {
+        "🗣️ Hinglish Complaint: Khana Bakwas & Battameez Staff": {
+            "text": "Khana ekdum bakwas tha aur staff bohot battameez tha. Table par ganda tissue pada tha. Dhoka hua hamare sath.",
+            "rating": 1,
+            "name": "Amit Sharma",
+            "branch": "Jaipur Malviya Nagar Flagship"
+        },
+        "⏳ Mixed: Delicious Food but 55-Min Wait Time": {
             "text": "The truffle pasta and mocktails were utterly delicious and freshly prepared! But we had to wait 55 minutes for our table and another 40 minutes for the main course. The floor supervisor was slow and distracted.",
             "rating": 3,
             "name": "Siddharth Joshi",
@@ -341,7 +501,7 @@ with tab2:
     }
 
     selected_preset = st.selectbox(
-        "Choose an Enterprise Test Case or write your own custom review:",
+        "Choose an Enterprise Test Case or write custom review text:",
         list(presets.keys())
     )
 
@@ -368,14 +528,22 @@ with tab2:
                 index=0
             )
 
-    selected_persona = st.selectbox(
-        "Select Brand Response Persona (Multi-Agent Alignment):",
-        [p.value for p in BrandPersona],
-        index=0
-    )
+    c_opt1, c_opt2 = st.columns(2)
+    with c_opt1:
+        selected_persona = st.selectbox(
+            "Brand Response Persona:",
+            [p.value for p in BrandPersona],
+            index=0
+        )
+    with c_opt2:
+        use_llm_opt = st.checkbox(
+            "Enable Optional LLM Generation (if API Key configured in .env)",
+            value=True,
+            help="If unchecked or if API key is absent, Revio uses safe deterministic policy templates."
+        )
 
-    if st.button("🚀 Analyze & Generate Autonomous Agent Response", type="primary", use_container_width=True):
-        with st.spinner("Executing Aspect Decomposition, Risk Calculation & Guardrail Filtering..."):
+    if st.button("🚀 Analyze & Generate Governed Response", type="primary", use_container_width=True):
+        with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):
             analysis = analyzer.analyze(input_text, in_rating)
             crisis = crisis_detector.evaluate(input_text, in_rating)
             persona_enum = BrandPersona(selected_persona)
@@ -384,18 +552,18 @@ with tab2:
                 branch_name=in_branch,
                 analysis=analysis,
                 crisis=crisis,
-                persona=persona_enum
+                persona=persona_enum,
+                use_llm_if_available=use_llm_opt
             )
 
             st.markdown("---")
 
-            # Result Section
             res_left, res_right = st.columns([6, 6])
 
             with res_left:
                 st.markdown("#### 1. Cognitive NLP Diagnostics")
 
-                # Top Badges
+                # Crisis badge
                 badge_class = "badge-low"
                 if crisis.crisis_level == CrisisLevel.CRITICAL:
                     badge_class = "badge-critical"
@@ -403,27 +571,34 @@ with tab2:
                     badge_class = "badge-high"
 
                 st.markdown(f"""
-                <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 1rem; flex-wrap: wrap;">
+                <div style="display: flex; gap: 0.8rem; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap;">
                     <span style="font-weight: 700; font-size: 0.9rem;">Overall Sentiment:</span>
                     <span style="background: #E2E8F0; padding: 4px 10px; border-radius: 6px; font-weight: bold; font-size: 0.8rem;">
                         {analysis.overall_sentiment.value} ({analysis.compound_score:+.2f})
                     </span>
-                    <span style="font-weight: 700; font-size: 0.9rem; margin-left: 0.5rem;">Crisis Tier:</span>
+                    <span style="font-weight: 700; font-size: 0.9rem; margin-left: 0.5rem;">Risk Tier:</span>
                     <span class="{badge_class}">
-                        {crisis.crisis_level.value} ({crisis.risk_score}%)
+                        {crisis.crisis_level.value} ({crisis.risk_score}/100)
                     </span>
                 </div>
                 """, unsafe_allow_html=True)
 
+                st.caption("ℹ️ *Note: Risk scores are heuristic screening estimates for queue triage, not calibrated probabilities.*")
+
                 st.markdown(f"**Primary Emotion Detected:** `{analysis.primary_emotion}`")
                 st.markdown(f"**Root-Cause Driver:** `{analysis.root_cause}`")
                 st.markdown(f"**Threat Vectors Identified:** {', '.join(crisis.threat_vectors)}")
-                st.markdown(f"**Escalation SLA Target:** `{crisis.sla_window}` ➔ *{crisis.escalation_target}*")
+                
+                st.markdown("**Matched Evidence & Screening Reasons:**")
+                for reason in crisis.flag_reasons:
+                    st.markdown(f"- 🔍 {reason}")
+
+                st.markdown(f"**Escalation Target & SLA:** `{crisis.sla_window}` ➔ *{crisis.escalation_target}*")
 
                 st.markdown("<br><b>Granular Aspect Extraction (ABSA):</b>", unsafe_allow_html=True)
                 if analysis.detected_aspects:
                     for asp in analysis.detected_aspects:
-                        pill_class = "aspect-pill-pos" if asp.sentiment.value == "POSITIVE" else "aspect-pill-neg"
+                        pill_class = "aspect-pill-pos" if asp.sentiment.value == "POSITIVE" else ("aspect-pill-neg" if asp.sentiment.value == "NEGATIVE" else "aspect-pill-neu")
                         st.markdown(f"""
                         <div style="background: white; border: 1px solid #E2E8F0; padding: 8px 12px; border-radius: 8px; margin-bottom: 6px;">
                             <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -431,48 +606,66 @@ with tab2:
                                 <span class="{pill_class}">{asp.sentiment.value} ({asp.score:+.2f})</span>
                             </div>
                             <div style="font-size: 0.8rem; color: #475569; margin-top: 4px;">
-                                <em>"{asp.context_snippet}"</em>
+                                Clause context: <em>"{asp.context_snippet}"</em>
                             </div>
                         </div>
                         """, unsafe_allow_html=True)
                 else:
-                    st.info("No specific operational aspects matched standard taxonomy (General feedback).")
+                    st.info("No specific operational aspects matched the standard taxonomy (General feedback).")
 
             with res_right:
-                st.markdown("#### 2. Agentic Context-Aware Response")
+                st.markdown("#### 2. Governed Response & Human Approval")
 
-                hitl_badge = "badge-low" if resp.hitl_status == "AUTO_APPROVED" else "badge-high"
-                ticket_str = f"<span class='ticket-badge'>#{resp.ticket_id}</span>" if resp.ticket_id else "None"
+                hitl_badge = "badge-high" if "REQUIRES" in resp.hitl_status else "badge-low"
+                ticket_str = f"#{resp.ticket_id} (Simulated)" if resp.ticket_id else "None"
 
                 st.markdown(f"""
                 <div style="background: white; border: 1px solid #CBD5E1; border-radius: 12px; padding: 1.2rem; box-shadow: 0 4px 15px rgba(0,0,0,0.03);">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.8rem; flex-wrap: wrap;">
                         <div>
                             <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: bold; color: #64748B;">Routing Workflow:</span>
                             <span class="{hitl_badge}">{resp.hitl_status}</span>
                         </div>
                         <div>
-                            <span style="font-size: 0.75rem; color: #64748B;">Ticket ID:</span> {ticket_str}
+                            <span style="font-size: 0.75rem; color: #64748B;">Internal Case Ref:</span> <code>{ticket_str}</code>
                         </div>
                     </div>
-                    <div style="background: #F8FAFC; border-left: 4px solid #006067; padding: 12px; border-radius: 6px; font-size: 0.9rem; line-height: 1.5; color: #1E293B;">
-                        {resp.response_text}
+                    <div style="font-size: 0.75rem; color: #64748B; margin-bottom: 0.4rem;">
+                        <strong>Draft Source:</strong> <em>{resp.generation_source}</em>
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
 
-                st.markdown("<br><b>🛡️ Compliance & Safety Guardrails:</b>", unsafe_allow_html=True)
-                if resp.guardrail_passed:
-                    st.success("✅ **Guardrail Passed:** Zero legal liabilities, unauthorized concessions, or admitted fault phrases detected.")
-                else:
-                    st.warning("⚠️ **Guardrail Triggered:** Liability clause was sanitized and replaced with safe formal language.")
+                # Editable response area for Human-in-the-Loop approval
+                st.markdown("<br><b>Draft Response (Human Review & Edit):</b>", unsafe_allow_html=True)
+                approved_response_text = st.text_area(
+                    "You may review or edit the drafted reply before approving:",
+                    value=resp.response_text,
+                    height=130,
+                    key="hitl_draft_area"
+                )
 
-                st.markdown("<b>Next Actionable Operational Steps:</b>", unsafe_allow_html=True)
+                # Guardrail check
+                st.markdown("<b>🛡️ Compliance & Anti-Hallucination Guardrails:</b>", unsafe_allow_html=True)
+                if resp.guardrail_passed:
+                    st.success("✅ **Guardrails Passed:** Zero unauthorized refund promises, fake compensation, or legal liability admissions detected.")
+                else:
+                    st.warning("⚠️ **Guardrail Sanitized:** Unverified claims or liability terms were stripped and normalized.")
+                    for w in resp.guardrail_warnings:
+                        st.caption(f"- {w}")
+
+                st.markdown("<b>Internal Workflow Actions:</b>", unsafe_allow_html=True)
                 for step in resp.actionable_steps:
                     st.markdown(f"- ⚡ {step}")
 
-                if st.button("Simulate 1-Click Multi-Platform Publish (Google Maps / Yelp)"):
-                    st.toast("Success: Response pushed to public platform via Revio API Connector!", icon="🚀")
+                # Human sign-off action buttons
+                col_btn1, col_btn2 = st.columns(2)
+                with col_btn1:
+                    if st.button("✅ Approve Response (Sign-off)", use_container_width=True):
+                        st.success("Response approved by Human Reviewer! Status: APPROVED_FOR_DISPATCH (Simulated)")
+                with col_btn2:
+                    if st.button("🚀 Simulate Public Post (Google Maps / Yelp)", use_container_width=True):
+                        st.toast("Simulated API dispatch: Response pushed to mock connector! (No real external requests sent)", icon="📢")
 
 
 # =============================================================================
@@ -486,7 +679,7 @@ with tab3:
     with b_filter_col1:
         branch_filter = st.selectbox(
             "Filter by Branch:",
-            ["All Locations"] + [b["name"] for b in DEFAULT_BRANCHES]
+            ["All Locations"] + list(set([r["branch_name"] for r in enriched_reviews]))
         )
     with b_filter_col2:
         sentiment_filter = st.selectbox(
@@ -511,44 +704,43 @@ with tab3:
     st.markdown(f"**Displaying {len(filtered)} reviews matching criteria:**")
 
     for item in filtered[:15]:
-        with st.expander(f"{item['customer_name']} ({item['star_rating']}★) — {item['branch_name']} | Platform: {item['platform']}"):
-            st.markdown(f"**Customer Review:** *\"{item['review_text']}\"*")
+        with st.expander(f"{item.get('customer_name', 'Guest')} ({item.get('star_rating', 3)}★) — {item.get('branch_name', 'Branch')} | Platform: {item.get('platform', 'Direct')}"):
+            st.markdown(f"**Customer Review:** *\"{item.get('review_text', '')}\"*")
             c1, c2, c3 = st.columns(3)
             with c1:
-                st.markdown(f"**Sentiment:** `{item['overall_sentiment']}` ({item['compound_score']:+.2f})")
+                st.markdown(f"**Sentiment:** `{item.get('overall_sentiment', 'NEUTRAL')}` ({item.get('compound_score', 0.0):+.2f})")
             with c2:
-                st.markdown(f"**Crisis Risk Score:** `{item['risk_score']}%` ({item['crisis_level']})")
+                st.markdown(f"**Screening Risk:** `{item.get('risk_score', 0)}/100` ({item.get('crisis_level', 'LOW')})")
             with c3:
-                st.markdown(f"**Primary Emotion:** `{item['primary_emotion']}`")
+                st.markdown(f"**Primary Emotion:** `{item.get('primary_emotion', 'Neutral')}`")
 
-            if item["aspects"]:
+            if item.get("aspects"):
                 st.markdown("**Extracted Aspects:**")
                 for a in item["aspects"]:
                     st.markdown(f"- **{a['category']}**: `{a['sentiment']}` ({a['score']:+.2f}) | Keywords: *{', '.join(a['keywords'])}*")
 
 
 # =============================================================================
-# TAB 4: STRATEGIC ARCHITECTURE & SUBMISSION REPORTS
+# TAB 4: STRATEGIC ARCHITECTURE & REPORTS
 # =============================================================================
 with tab4:
-    st.subheader("Architectural Blueprint & Assessment Deliverables")
-    st.caption("Technical blueprints, system design diagrams, and downloadable candidate reports for Cynbit Leadership.")
+    st.subheader("Architectural Blueprints, Evaluation & Deliverables")
+    st.caption("Complete technical assessment documentation, empirical metrics, and deliverables for Cynbit Leadership.")
 
-    rep_col1, rep_col2 = st.columns(2)
+    rep_col1, rep_col2, rep_col3 = st.columns(3)
     with rep_col1:
         st.markdown("""
-        ### 📄 AI Opportunity Report (Deliverable 1)
-        **Core Focus:** Industry analysis of high-value AI opportunities across Cynbit:
-        - Revio 2.0 (Reputation & Crisis AI)
-        - Cynbit Studio / BitElevate (AI Code Architecture Evaluator)
-        - TenantEase (Smart Lease OCR & Risk Engine)
-        - Cynbit Nexus (Pre-Sales Architecture Blueprint Agent)
+        #### 📄 AI Opportunity Report
+        - Business problem & Cynbit company context
+        - 4 AI opportunities compared
+        - Revio 2.0 selection rationale
+        - Expected business value & KPIs
         """)
         try:
             with open("reports/AI_OPPORTUNITY_REPORT.md", "r", encoding="utf-8") as f:
                 rep1_text = f.read()
             st.download_button(
-                label="📥 Download AI Opportunity Report (Markdown)",
+                label="📥 Download AI Opportunity Report",
                 data=rep1_text,
                 file_name="Cynbit_AI_Opportunity_Report_Anurag_Pandey.md",
                 mime="text/markdown",
@@ -559,65 +751,125 @@ with tab4:
 
     with rep_col2:
         st.markdown("""
-        ### 🛠️ Technical Approach Report (Deliverable 3)
-        **Core Focus:** Comprehensive production roadmap for Revio 2.0:
-        - Compound AI System Architecture (ABSA + Crisis Neural Network)
-        - Prompt Engineering & Few-Shot Templates
-        - Evaluation Metrics (Precision/Recall on Crisis, Macro-F1 on Aspects)
-        - Scale & Cloud Deployment on AWS/Azure
+        #### 🛠️ Technical Approach Report
+        - Compound AI System Architecture
+        - ABSA & Crisis Screening Design
+        - Grounded response generation & fallback
+        - Deployment & Security
         """)
         try:
             with open("reports/TECHNICAL_APPROACH_REPORT.md", "r", encoding="utf-8") as f:
                 rep2_text = f.read()
             st.download_button(
-                label="📥 Download Technical Approach Report (Markdown)",
+                label="📥 Download Technical Approach Report",
                 data=rep2_text,
                 file_name="Cynbit_Technical_Approach_Report_Anurag_Pandey.md",
                 mime="text/markdown",
                 use_container_width=True
             )
+        except Exception as e:
+            st.error(f"Report not found: {e}")
+
+    with rep_col3:
+        st.markdown("""
+        #### 📊 Empirical Benchmark Results
+        - Labeled test dataset evaluation
+        - Real Aspect Precision, Recall, Macro-F1
+        - Crisis Precision, Recall, Critical FN
+        - Real measured processing latency
+        """)
+        try:
+            with open("reports/evaluation_results.json", "r", encoding="utf-8") as f:
+                eval_json = f.read()
+            st.download_button(
+                label="📥 Download Evaluation Results (JSON)",
+                data=eval_json,
+                file_name="revio_empirical_evaluation_results.json",
+                mime="application/json",
+                use_container_width=True
+            )
         except Exception:
-            st.info("Technical Approach Report being compiled...")
+            st.info("Evaluation results will appear after running evaluate.py")
 
     st.markdown("---")
-    st.markdown("### 🏛️ Revio 2.0 Compound Multi-Agent System Architecture")
+    st.markdown("### 📊 Actual Measured Evaluation Metrics (Reproducible Benchmark)")
+    try:
+        with open("reports/evaluation_results.json", "r", encoding="utf-8") as f:
+            eval_data = json.load(f)
+        
+        m_col1, m_col2, m_col3, m_col4 = st.columns(4)
+        with m_col1:
+            st.metric("Aspect Macro-F1", f"{eval_data['aspect_metrics']['macro_f1']*100:.1f}%")
+        with m_col2:
+            st.metric("Crisis Recall", f"{eval_data['crisis_metrics']['recall']*100:.1f}%")
+        with m_col3:
+            st.metric("Critical Safety Misses", f"{eval_data['crisis_metrics']['critical_safety_false_negatives']} / {eval_data['crisis_metrics']['critical_safety_total']}")
+        with m_col4:
+            st.metric("Mean Latency", f"{eval_data['latency_profile_ms']['mean_ms']:.2f} ms")
+        
+        st.caption(f"Evaluated on {eval_data['dataset_size']} ground truth reviews covering positive, negative, mixed, negation, Hinglish, and safety crises. Latency methodology: {eval_data['latency_profile_ms']['methodology']}")
+    except Exception as e:
+        st.info("Run `python evaluate.py` to populate live metrics.")
+
+    st.markdown("---")
+    st.markdown("### 🏛️ Revio 2.0 System Component Architecture")
+    st.markdown("""
+| Component | Implementation Method | Purpose & Rationale | Status in Proof of Concept |
+| :--- | :--- | :--- | :--- |
+| **Review Ingestion** | Pandas + Schema Validator | CSV upload with validation (`review_text`, `star_rating`, `branch`) | **Fully Implemented** |
+| **Aspect-Based Sentiment** | Rule-Based Lexical ABSA | 6 operational categories, contrastive clauses, negation inversion | **Fully Implemented** |
+| **Crisis & Urgency Triage** | Weighted Threat Clustering | Health/safety, legal, fraud, abuse, PR screening index (0-100) | **Fully Implemented** |
+| **Response Generation** | Grounded Policy Fallback + Optional LLM | Deterministic policy templates + optional Gemini/OpenAI if configured | **Fully Implemented** |
+| **Guardrails & Compliance** | Strict Regex Inspection | Prevents unverified refunds, promises, and legal liability admissions | **Fully Implemented** |
+| **Human-in-the-Loop** | Streamlit Approval Interface | Enforces human review & edit before public reply sign-off | **Fully Implemented** |
+| **External Publishing** | Mock API Connector | Google Maps / Yelp public reply simulation | **Simulated (Clearly Labeled)** |
+| **Incident Case Management**| Deterministic ID Generator | Reference tracking for internal manager routing (`#SIM-XXXX`) | **Simulated (Clearly Labeled)** |
+    """)
+
     st.markdown("""
 ```
                    +-------------------------------------------------------------+
                    |  External Review Sources (Google Maps, Yelp, Zomato, Social) |
                    +-------------------------------------------------------------+
-                                                 │
-                                                 ▼
+                                                  │
+                                                  ▼
                    +-------------------------------------------------------------+
-                   |          Revio Ingestion Gateway & Pre-Processing           |
-                   |      (Normalization, Deduplication, Metadata Enrichment)    |
+                   |          Revio Ingestion Gateway & Schema Validation        |
+                   |       (CSV / JSON, Column Normalization, Row Filtering)     |
                    +-------------------------------------------------------------+
-                                                 │
-                                                 ▼
-             ┌───────────────────────────────────┴───────────────────────────────────┐
-             ▼                                                                       ▼
+                                                  │
+                                                  ▼
+              ┌───────────────────────────────────┴───────────────────────────────────┐
+              ▼                                                                       ▼
 +------------------------------------+                             +------------------------------------+
-| Aspect-Based Sentiment Engine      |                             | Crisis & Legal Risk Classifier     |
-| (6 Granular Categories, Polarity,  |                             | (Health & Safety, Legal, Fraud,    |
-| Emotion & Root Cause Extraction)   |                             | PR Viral Threat Vectors, 0-100%)   |
+| Aspect-Based Sentiment Engine      |                             | Crisis & Risk Screening Triage     |
+| (6 Categories, Contrastive Clauses,|                             | (Health & Safety, Legal, Fraud,    |
+| Negation Inversion, Polarity Score)|                             | Harassment Screening Index 0-100%) |
 +------------------------------------+                             +------------------------------------+
-             │                                                                       │
-             └───────────────────────────────────┬───────────────────────────────────┘
-                                                 │
-                                                 ▼
+              │                                                                       │
+              └───────────────────────────────────┬───────────────────────────────────┘
+                                                  │
+                                                  ▼
                    +-------------------------------------------------------------+
                    |           Multi-Agent Contextual Response Synthesizer       |
-                   |  (Persona Agent + Brand Knowledge Base + Safety Guardrails) |
+                   |  (Policy Persona Engine + Safe Offline Fallback + LLM Hook) |
                    +-------------------------------------------------------------+
-                                                 │
-                         ┌───────────────────────┴───────────────────────┐
-                         ▼                                               ▼
-         [If Low Risk / Auto-Approve]                     [If High Risk / Critical Crisis]
-                         │                                               │
-                         ▼                                               ▼
-     +---------------------------------------+       +---------------------------------------+
-     | Instant Multi-Channel Auto-Publishing |       | Human-In-The-Loop (HITL) Queue &      |
-     | (Public Review Response via API)      |       | Urgent Ticket (#REV-XXXX) Escalation   |
-     +---------------------------------------+       +---------------------------------------+
+                                                  │
+                                                  ▼
+                   +-------------------------------------------------------------+
+                   |          Compliance & Anti-Hallucination Guardrails         |
+                   |   (Intercepts Unverified Refunds & Legal Liability Claims)  |
+                   +-------------------------------------------------------------+
+                                                  │
+                                                  ▼
+                   +-------------------------------------------------------------+
+                   |               Human-in-the-Loop (HITL) Queue                |
+                   |   (Mandatory Review & Edit Before Public Reply Sign-off)    |
+                   +-------------------------------------------------------------+
+                                                  │
+                                                  ▼
+                   +-------------------------------------------------------------+
+                   |      Simulated Dispatch to Review Channels (Mock Connector) |
+                   +-------------------------------------------------------------+
 ```
     """)

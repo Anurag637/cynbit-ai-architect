@@ -1,0 +1,427 @@
+{
+  "evaluation_timestamp": "2026-10-20 20:06:18",
+  "dataset_size": 20,
+  "aspect_metrics": {
+    "mean_precision": 0.8167,
+    "mean_recall": 0.825,
+    "macro_f1": 0.8067
+  },
+  "crisis_metrics": {
+    "true_positives": 7,
+    "false_positives": 0,
+    "false_negatives": 0,
+    "true_negatives": 13,
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1_score": 1.0,
+    "critical_safety_false_negatives": 0,
+    "critical_safety_total": 6
+  },
+  "guardrail_metrics": {
+    "total_responses_tested": 20,
+    "guardrail_sanitizations": 0,
+    "unauthorized_concession_leaks": 0
+  },
+  "latency_profile_ms": {
+    "iterations": 50,
+    "mean_ms": 0.756,
+    "p95_ms": 0.882,
+    "min_ms": 0.705,
+    "max_ms": 1.005,
+    "methodology": "CPU single-threaded time.perf_counter() on end-to-end pipeline (ABSA + Crisis + Response Synthesis)"
+  },
+  "detailed_results": [
+    {
+      "id": "EVAL-01",
+      "category_type": "safety_critical",
+      "true_aspects": [
+        "Product & Food Quality"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 100,
+      "threat_vectors": [
+        "Health, Hygiene & Safety Violation"
+      ]
+    },
+    {
+      "id": "EVAL-02",
+      "category_type": "safety_critical",
+      "true_aspects": [
+        "Billing & Transactions"
+      ],
+      "pred_aspects": [
+        "Pricing & Value",
+        "Billing & Transactions"
+      ],
+      "aspect_f1": 0.667,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 100,
+      "threat_vectors": [
+        "Legal & Regulatory Action",
+        "Financial Integrity & Fraud Allegation"
+      ]
+    },
+    {
+      "id": "EVAL-03",
+      "category_type": "safety_critical",
+      "true_aspects": [
+        "Speed & Turnaround Time",
+        "Customer Service"
+      ],
+      "pred_aspects": [],
+      "aspect_f1": 0.0,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 70,
+      "threat_vectors": [
+        "Harassment & Human Safety"
+      ]
+    },
+    {
+      "id": "EVAL-04",
+      "category_type": "safety_critical",
+      "true_aspects": [
+        "Cleanliness & Ambience",
+        "Customer Service"
+      ],
+      "pred_aspects": [
+        "Cleanliness & Ambience",
+        "Customer Service"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 70,
+      "threat_vectors": [
+        "Health, Hygiene & Safety Violation",
+        "Public Viral PR Exposure"
+      ]
+    },
+    {
+      "id": "EVAL-05",
+      "category_type": "hinglish",
+      "true_aspects": [
+        "Cleanliness & Ambience",
+        "Product & Food Quality",
+        "Customer Service"
+      ],
+      "pred_aspects": [
+        "Cleanliness & Ambience",
+        "Product & Food Quality",
+        "Customer Service"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 25,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-06",
+      "category_type": "hinglish",
+      "true_aspects": [
+        "Product & Food Quality",
+        "Pricing & Value",
+        "Speed & Turnaround Time"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality",
+        "Pricing & Value",
+        "Speed & Turnaround Time"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 5,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-07",
+      "category_type": "negation",
+      "true_aspects": [
+        "Cleanliness & Ambience",
+        "Customer Service"
+      ],
+      "pred_aspects": [
+        "Cleanliness & Ambience",
+        "Customer Service"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 25,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-08",
+      "category_type": "negation",
+      "true_aspects": [
+        "Product & Food Quality",
+        "Customer Service"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality",
+        "Customer Service"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 15,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-09",
+      "category_type": "mixed",
+      "true_aspects": [
+        "Product & Food Quality",
+        "Speed & Turnaround Time",
+        "Customer Service"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality",
+        "Customer Service",
+        "Speed & Turnaround Time"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 5,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-10",
+      "category_type": "mixed",
+      "true_aspects": [
+        "Cleanliness & Ambience",
+        "Product & Food Quality",
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "pred_aspects": [
+        "Cleanliness & Ambience",
+        "Product & Food Quality",
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 5,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-11",
+      "category_type": "positive",
+      "true_aspects": [
+        "Speed & Turnaround Time",
+        "Customer Service",
+        "Product & Food Quality"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality",
+        "Customer Service",
+        "Speed & Turnaround Time"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 0,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-12",
+      "category_type": "positive",
+      "true_aspects": [
+        "Cleanliness & Ambience",
+        "Pricing & Value"
+      ],
+      "pred_aspects": [
+        "Cleanliness & Ambience",
+        "Product & Food Quality",
+        "Pricing & Value"
+      ],
+      "aspect_f1": 0.8,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 0,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-13",
+      "category_type": "positive",
+      "true_aspects": [
+        "Speed & Turnaround Time",
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "pred_aspects": [
+        "Speed & Turnaround Time",
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 0,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-14",
+      "category_type": "negative",
+      "true_aspects": [
+        "Speed & Turnaround Time",
+        "Customer Service",
+        "Product & Food Quality"
+      ],
+      "pred_aspects": [
+        "Speed & Turnaround Time"
+      ],
+      "aspect_f1": 0.5,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 25,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-15",
+      "category_type": "negative",
+      "true_aspects": [
+        "Pricing & Value",
+        "Product & Food Quality",
+        "Billing & Transactions"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality",
+        "Pricing & Value",
+        "Customer Service"
+      ],
+      "aspect_f1": 0.667,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 25,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-16",
+      "category_type": "negative",
+      "true_aspects": [
+        "Cleanliness & Ambience"
+      ],
+      "pred_aspects": [
+        "Cleanliness & Ambience"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 15,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-17",
+      "category_type": "safety_critical",
+      "true_aspects": [
+        "Product & Food Quality"
+      ],
+      "pred_aspects": [
+        "Customer Service"
+      ],
+      "aspect_f1": 0.0,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 100,
+      "threat_vectors": [
+        "Legal & Regulatory Action",
+        "Health, Hygiene & Safety Violation"
+      ]
+    },
+    {
+      "id": "EVAL-18",
+      "category_type": "safety_critical",
+      "true_aspects": [
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "pred_aspects": [
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 100,
+      "threat_vectors": [
+        "Harassment & Human Safety"
+      ]
+    },
+    {
+      "id": "EVAL-19",
+      "category_type": "neutral",
+      "true_aspects": [
+        "Product & Food Quality",
+        "Pricing & Value",
+        "Customer Service"
+      ],
+      "pred_aspects": [
+        "Product & Food Quality",
+        "Pricing & Value",
+        "Customer Service"
+      ],
+      "aspect_f1": 1.0,
+      "true_crisis": false,
+      "pred_crisis": false,
+      "risk_score": 5,
+      "threat_vectors": [
+        "Routine Feedback"
+      ]
+    },
+    {
+      "id": "EVAL-20",
+      "category_type": "hinglish",
+      "true_aspects": [
+        "Customer Service",
+        "Billing & Transactions"
+      ],
+      "pred_aspects": [
+        "Pricing & Value",
+        "Customer Service"
+      ],
+      "aspect_f1": 0.5,
+      "true_crisis": true,
+      "pred_crisis": true,
+      "risk_score": 65,
+      "threat_vectors": [
+        "Financial Integrity & Fraud Allegation"
+      ]
+    }
+  ]
+}
