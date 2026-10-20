@@ -541,11 +541,10 @@ with tab2:
     if use_llm_opt:
         llm_col1, llm_col2 = st.columns([7, 5])
         with llm_col1:
-            placeholder_text = "Using Secrets (or paste custom hf_... to override)" if has_env_key else "hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
             user_hf_key = st.text_input(
-                "🤗 Hugging Face Free Token (starts with hf_...):",
+                "🤗 Paste Your Hugging Face Free Token (starts with hf_...):",
                 type="password",
-                placeholder=placeholder_text,
+                placeholder="Paste your active hf_xxxxxxxx token here...",
                 help="100% free token from https://huggingface.co/settings/tokens (Read permissions). No credit card required!"
             )
         with llm_col2:
@@ -559,10 +558,12 @@ with tab2:
                 index=0,
                 help="Qwen 2.5 7B is the #1 recommended free open model for customer service & instruction following (Apache 2.0)."
             )
-        if not user_hf_key and not has_env_key:
+        if user_hf_key:
+            st.caption("✨ *Custom Hugging Face token will be used for live generation.*")
+        elif has_env_key:
+            st.caption("ℹ️ *Box is empty: attempting to use Streamlit Secrets (paste your active hf_... token above if secrets are invalid).*")
+        else:
             st.caption("💡 *Tip: Leave blank to use 100% offline deterministic policy templates without any API key.*")
-        elif user_hf_key:
-            st.caption("✨ *Custom Hugging Face token detected and prioritized.*")
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):
@@ -677,7 +678,10 @@ with tab2:
                 """, unsafe_allow_html=True)
 
                 if getattr(resp, "llm_error", None):
-                    st.warning(f"⚠️ **LLM Fallback Activated:** {resp.llm_error}\n\n*Revio safely preserved continuity by reverting to the verified deterministic policy template.*")
+                    st.warning(
+                        f"⚠️ **LLM Fallback Activated:** {resp.llm_error}\n\n"
+                        "💡 **How to resolve:** Paste your active Hugging Face token (starts with `hf_...`) directly into the input box above, then click **'🚀 Analyze & Generate Governed Response'**. Revio will then generate live via the open model!"
+                    )
                 elif any(k in resp.generation_source for k in ["Hugging Face", "Gemini", "OpenAI"]):
                     st.success(f"✨ **Live AI Generation Active:** Drafted directly via `{resp.generation_source}`.")
 
