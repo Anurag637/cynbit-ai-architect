@@ -539,32 +539,42 @@ with tab2:
     selected_hf_model = HUGGINGFACE_MODEL
 
     if use_llm_opt:
-        llm_col1, llm_col2 = st.columns([7, 5])
-        with llm_col1:
-            user_hf_key = st.text_input(
-                "🤗 Paste Your Hugging Face Free Token (starts with hf_...):",
+        provider_mode = st.radio(
+            "Select AI Provider:",
+            ["✨ Google Gemini (100% Free Forever, No Credit Card Required)", "🤗 Hugging Face Serverless"],
+            index=0,
+            horizontal=True
+        )
+        if "Gemini" in provider_mode:
+            user_gemini_key = st.text_input(
+                "🔑 Paste Your Free Google Gemini API Key (starts with AIzaSy...):",
                 type="password",
-                placeholder="Paste your active hf_xxxxxxxx token here...",
-                help="100% free token from https://huggingface.co/settings/tokens (Read permissions). No credit card required!"
+                placeholder="Paste your free Gemini key: AIzaSyxxxxxxxxxxxxxxxxxxxxx",
+                help="Get a 100% free Gemini API key with 1,500 requests/day at https://aistudio.google.com/app/apikey (Zero cost, no credit card required)."
             )
-        with llm_col2:
-            selected_hf_model = st.selectbox(
-                "Free Open Model:",
-                [
-                    "meta-llama/Llama-3.1-8B-Instruct",
-                    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
-                    "Qwen/Qwen2.5-Coder-7B-Instruct",
-                    "google/gemma-3-4b-it"
-                ],
-                index=0,
-                help="Meta Llama 3.1 8B & DeepSeek R1 are the top verified free models hosted on Hugging Face Serverless Router."
-            )
-        if user_hf_key:
-            st.caption("✨ *Custom Hugging Face token will be used for live generation.*")
-        elif has_env_key:
-            st.caption("ℹ️ *Box is empty: attempting to use Streamlit Secrets (paste your active hf_... token above if secrets are invalid).*")
+            st.caption("🚀 **Recommended:** Google Gemini gives 1,500 requests/day for 100% free forever without payment credits. [Get your free key in 30 seconds at Google AI Studio](https://aistudio.google.com/app/apikey).")
         else:
-            st.caption("💡 *Tip: Leave blank to use 100% offline deterministic policy templates without any API key.*")
+            llm_col1, llm_col2 = st.columns([7, 5])
+            with llm_col1:
+                user_hf_key = st.text_input(
+                    "🤗 Paste Your Hugging Face Token (starts with hf_...):",
+                    type="password",
+                    placeholder="Paste your active hf_xxxxxxxx token here...",
+                    help="Hugging Face User Access Token. Note: HF serverless router requires pre-paid credits on some accounts."
+                )
+            with llm_col2:
+                selected_hf_model = st.selectbox(
+                    "Free Open Model:",
+                    [
+                        "meta-llama/Llama-3.1-8B-Instruct",
+                        "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+                        "Qwen/Qwen2.5-Coder-7B-Instruct",
+                        "google/gemma-3-4b-it"
+                    ],
+                    index=0,
+                    help="Meta Llama 3.1 8B & DeepSeek R1 are the top verified free models hosted on Hugging Face Serverless Router."
+                )
+            st.caption("ℹ️ *Note: If Hugging Face returns 'No remaining credits', switch to the Google Gemini option above (100% free forever without credits).*")
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):

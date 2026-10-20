@@ -303,36 +303,49 @@ class ResponseGenerator:
                 "Please draft the official reply."
             )
 
-            # 1. Hugging Face Serverless (Free Open-Source: Qwen 2.5 7B / Llama)
-            active_hf_key = custom_hf_key or HUGGINGFACE_API_KEY
-            if active_hf_key:
-                selected_hf_model = hf_model or HUGGINGFACE_MODEL or "Qwen/Qwen2.5-7B-Instruct"
-                llm_response, err = self._call_huggingface_llm(user_prompt, system_instruction, active_hf_key, selected_hf_model)
+            if custom_gemini_key:
+                # 1. User explicitly provided custom Gemini API key
+                llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, custom_gemini_key)
+                if llm_response:
+                    generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
+                    llm_error = None
+                else:
+                    llm_error = err
+            elif custom_hf_key:
+                # 2. User explicitly provided custom Hugging Face key
+                selected_hf_model = hf_model or HUGGINGFACE_MODEL or "meta-llama/Llama-3.1-8B-Instruct"
+                llm_response, err = self._call_huggingface_llm(user_prompt, system_instruction, custom_hf_key, selected_hf_model)
                 if llm_response:
                     generation_source = f"Hugging Face Free Inference ({selected_hf_model})"
                     llm_error = None
                 else:
                     llm_error = err
-
-            # 2. Google Gemini 1.5 Flash
-            if not llm_response:
-                active_gemini_key = custom_gemini_key or GEMINI_API_KEY
-                if active_gemini_key:
-                    llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
+            else:
+                # 3. Environment / Streamlit Secrets fallback (Gemini -> Hugging Face -> OpenAI)
+                if GEMINI_API_KEY:
+                    llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, GEMINI_API_KEY)
                     if llm_response:
                         generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
                         llm_error = None
                     else:
+                        llm_error = err
+
+                if not llm_response and HUGGINGFACE_API_KEY:
+                    selected_hf_model = hf_model or HUGGINGFACE_MODEL or "meta-llama/Llama-3.1-8B-Instruct"
+                    llm_response, err = self._call_huggingface_llm(user_prompt, system_instruction, HUGGINGFACE_API_KEY, selected_hf_model)
+                    if llm_response:
+                        generation_source = f"Hugging Face Free Inference ({selected_hf_model})"
+                        llm_error = None
+                    else:
                         llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
 
-            # 3. OpenAI GPT-4o-mini
-            if not llm_response and OPENAI_API_KEY:
-                llm_response, err = self._call_openai_llm(user_prompt, system_instruction, OPENAI_API_KEY)
-                if llm_response:
-                    generation_source = "OpenAI GPT-4o-mini (Grounded LLM)"
-                    llm_error = None
-                else:
-                    llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
+                if not llm_response and OPENAI_API_KEY:
+                    llm_response, err = self._call_openai_llm(user_prompt, system_instruction, OPENAI_API_KEY)
+                    if llm_response:
+                        generation_source = "OpenAI GPT-4o-mini (Grounded LLM)"
+                        llm_error = None
+                    else:
+                        llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
 
         # -------------------------------------------------------------
         # Deterministic Safe Template Fallback
