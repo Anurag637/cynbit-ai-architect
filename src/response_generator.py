@@ -28,7 +28,9 @@ from src.config import (
     ESCALATION_EMAIL,
     SUPPORT_PHONE,
     GEMINI_API_KEY,
-    OPENAI_API_KEY
+    OPENAI_API_KEY,
+    HUGGINGFACE_API_KEY,
+    HUGGINGFACE_MODEL
 )
 from src.analyzer import ReviewAnalysis
 from src.crisis_detector import CrisisEvaluation
@@ -161,6 +163,39 @@ class ResponseGenerator:
             return None
         return None
 
+    def _call_huggingface_llm(
+        self,
+        prompt: str,
+        system_instruction: str,
+        api_key: str,
+        model_id: str = HUGGINGFACE_MODEL
+    ) -> Optional[str]:
+        """Calls Hugging Face Serverless Inference Router (OpenAI-compatible chat completions)."""
+        try:
+            url = "https://router.huggingface.co/hf-inference/v1/chat/completions"
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}"
+            }
+            payload = {
+                "model": model_id,
+                "messages": [
+                    {"role": "system", "content": system_instruction},
+                    {"role": "user", "content": prompt}
+                ],
+                "temperature": 0.3,
+                "max_tokens": 300
+            }
+            resp = requests.post(url, headers=headers, json=payload, timeout=12)
+            if resp.status_code == 200:
+                data = resp.json()
+                choices = data.get("choices", [])
+                if choices:
+                    return choices[0].get("message", {}).get("content", "").strip()
+        except Exception:
+            return None
+        return None
+
     def generate(
         self,
         customer_name: str,
@@ -169,7 +204,9 @@ class ResponseGenerator:
         crisis: CrisisEvaluation,
         persona: BrandPersona = BrandPersona.EMPATHETIC_RESOLUTION,
         use_llm_if_available: bool = True,
-        custom_gemini_key: Optional[str] = None
+        custom_gemini_key: Optional[str] = None,
+        custom_hf_key: Optional[str] = None,
+        hf_model: Optional[str] = None
     ) -> GeneratedResponse:
         first_name = customer_name.split()[0] if customer_name else "Valued Guest"
         ticket_id = None
@@ -238,12 +275,24 @@ class ResponseGenerator:
                 "Please draft the official reply."
             )
 
-            active_gemini_key = custom_gemini_key or GEMINI_API_KEY
-            if active_gemini_key:
-                llm_response = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
+            # 1. Hugging Face Serverless (Free Open-Source: Qwen 2.5 7B / Llama)
+            active_hf_key = custom_hf_key or HUGGINGFACE_API_KEY
+            if active_hf_key:
+                selected_hf_model = hf_model or HUGGINGFACE_MODEL or "Qwen/Qwen2.5-7B-Instruct"
+                llm_response = self._call_huggingface_llm(user_prompt, system_instruction, active_hf_key, selected_hf_model)
                 if llm_response:
-                    generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
-            elif OPENAI_API_KEY:
+                    generation_source = f"Hugging Face Free Inference ({selected_hf_model})"
+
+            # 2. Google Gemini 1.5 Flash
+            if not llm_response:
+                active_gemini_key = custom_gemini_key or GEMINI_API_KEY
+                if active_gemini_key:
+                    llm_response = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
+                    if llm_response:
+                        generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
+
+            # 3. OpenAI GPT-4o-mini
+            if not llm_response and OPENAI_API_KEY:
                 llm_response = self._call_openai_llm(user_prompt, system_instruction, OPENAI_API_KEY)
                 if llm_response:
                     generation_source = "OpenAI GPT-4o-mini (Grounded LLM)"

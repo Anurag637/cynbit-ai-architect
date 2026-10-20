@@ -86,3 +86,26 @@ def test_guardrail_sanitizes_liability_clauses(response_gen, analyzer, detector)
     from src.config import FORBIDDEN_PHRASES
     has_forbidden = any(phrase in lower for phrase in FORBIDDEN_PHRASES)
     assert has_forbidden is True
+
+
+def test_huggingface_free_model_fallback_safety(response_gen, analyzer, detector):
+    """Verifies that Hugging Face integration degrades gracefully to deterministic fallback on network/auth failure."""
+    text = "Great ambience and delicious pasta!"
+    analysis = analyzer.analyze(text, star_rating=5)
+    crisis = detector.evaluate(text, star_rating=5)
+
+    # Calling with a dummy token should safely fall back to template rather than crashing
+    resp = response_gen.generate(
+        customer_name="Priya Singh",
+        branch_name="Mumbai Bandra West Lab",
+        analysis=analysis,
+        crisis=crisis,
+        persona=BrandPersona.WARM_CONCILIATORY,
+        use_llm_if_available=True,
+        custom_hf_key="hf_dummy_token_for_fallback_test",
+        hf_model="Qwen/Qwen2.5-7B-Instruct"
+    )
+    assert resp.hitl_status == "PENDING_HUMAN_APPROVAL"
+    assert "Mumbai Bandra West Lab" in resp.response_text
+    assert resp.generation_source == "Deterministic Policy Template (Safe Fallback)"
+    assert resp.guardrail_passed is True

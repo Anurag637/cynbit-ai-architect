@@ -10,7 +10,7 @@
 [![Python Version](https://img.shields.io/badge/Python-3.10%2B-blue.svg?style=flat&logo=python)](https://www.python.org/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110%2B-009688.svg?style=flat&logo=fastapi)](https://fastapi.tiangolo.com/)
 [![Streamlit](https://img.shields.io/badge/Streamlit-1.35%2B-FF4B4B.svg?style=flat&logo=streamlit)](https://streamlit.io/)
-[![Test Suite](https://img.shields.io/badge/PyTest-31%20Passed%20(100%25)-success.svg?style=flat&logo=pytest)](https://pytest.org/)
+[![Test Suite](https://img.shields.io/badge/PyTest-32%20Passed%20(100%25)-success.svg?style=flat&logo=pytest)](https://pytest.org/)
 [![Proof of Concept](https://img.shields.io/badge/Status-Functional%20PoC-orange.svg?style=flat)](https://github.com/Anurag637/cynbit-ai-architect)
 
 ---
@@ -185,11 +185,11 @@ Copy-Item .env.example .env
 pip install -r requirements.txt
 ```
 
-### 2. Run the Full Automated Test Suite (31 Tests)
+### 2. Run the Full Automated Test Suite (32 Tests)
 ```powershell
 python -m pytest -v
 ```
-*Expected Result:* **31 passed in ~1.0s (100% test pass rate across parsing, classification, guardrails, and APIs).**
+*Expected Result:* **32 passed in ~1.0s (100% test pass rate across parsing, classification, guardrails, and APIs).**
 
 ### 3. Run the Empirical Benchmark Evaluation
 ```powershell

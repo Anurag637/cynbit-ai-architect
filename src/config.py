@@ -25,6 +25,8 @@ SUPPORT_PHONE: str = os.getenv("SUPPORT_PHONE", "+91-89479-62667")
 # Optional LLM API Keys (read from environment or Streamlit Cloud secrets)
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+HUGGINGFACE_API_KEY: str = os.getenv("HUGGINGFACE_API_KEY", "") or os.getenv("HF_TOKEN", "")
+HUGGINGFACE_MODEL: str = os.getenv("HUGGINGFACE_MODEL", "Qwen/Qwen2.5-7B-Instruct")
 
 try:
     import streamlit as st
@@ -33,6 +35,11 @@ try:
             GEMINI_API_KEY = str(st.secrets["GEMINI_API_KEY"])
         if not OPENAI_API_KEY and "OPENAI_API_KEY" in st.secrets:
             OPENAI_API_KEY = str(st.secrets["OPENAI_API_KEY"])
+        if not HUGGINGFACE_API_KEY:
+            if "HUGGINGFACE_API_KEY" in st.secrets:
+                HUGGINGFACE_API_KEY = str(st.secrets["HUGGINGFACE_API_KEY"])
+            elif "HF_TOKEN" in st.secrets:
+                HUGGINGFACE_API_KEY = str(st.secrets["HF_TOKEN"])
 except Exception:
     pass
 

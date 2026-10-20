@@ -28,7 +28,9 @@ from src.config import (
     ESCALATION_EMAIL,
     SUPPORT_PHONE,
     GEMINI_API_KEY,
-    OPENAI_API_KEY
+    OPENAI_API_KEY,
+    HUGGINGFACE_API_KEY,
+    HUGGINGFACE_MODEL
 )
 
 # Page Configuration
@@ -522,9 +524,9 @@ with tab2:
             index=0
         )
     with c_opt2:
-        has_env_key = bool(GEMINI_API_KEY or OPENAI_API_KEY)
+        has_env_key = bool(HUGGINGFACE_API_KEY or GEMINI_API_KEY or OPENAI_API_KEY)
         use_llm_opt = st.checkbox(
-            "Enable Optional LLM Generation (Gemini 1.5 Flash)",
+            "Enable Optional LLM Generation (Hugging Face Free / Gemini)",
             value=has_env_key,
             help="If unchecked or if no key is provided, Revio uses safe offline deterministic policy templates."
         )
@@ -533,14 +535,31 @@ with tab2:
         else:
             st.caption("ℹ️ **Offline Mode:** No API Key detected. Using safe deterministic policy templates (100% Free / Offline).")
 
+    user_hf_key = None
     user_gemini_key = None
+    selected_hf_model = HUGGINGFACE_MODEL
+
     if use_llm_opt and not has_env_key:
-        user_gemini_key = st.text_input(
-            "🔑 Optional: Enter Google Gemini API Key to test live LLM (leave blank for offline templates):",
-            type="password",
-            placeholder="AIzaSy...",
-            help="Optional. Get a free key at https://aistudio.google.com/app/apikey. If left blank, offline templates are used."
-        )
+        llm_col1, llm_col2 = st.columns([7, 5])
+        with llm_col1:
+            user_hf_key = st.text_input(
+                "🤗 Hugging Face Free Token (starts with hf_...):",
+                type="password",
+                placeholder="hf_xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+                help="100% free token from https://huggingface.co/settings/tokens (Read permissions). No credit card required!"
+            )
+        with llm_col2:
+            selected_hf_model = st.selectbox(
+                "Free Open Model:",
+                [
+                    "Qwen/Qwen2.5-7B-Instruct",
+                    "mistralai/Mistral-7B-Instruct-v0.3",
+                    "meta-llama/Llama-3.2-3B-Instruct"
+                ],
+                index=0,
+                help="Qwen 2.5 7B is the #1 recommended free open model for customer service & instruction following (Apache 2.0)."
+            )
+        st.caption("💡 *Tip: Leave blank to use 100% offline deterministic policy templates without any API key.*")
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):
@@ -554,7 +573,9 @@ with tab2:
                 crisis=crisis,
                 persona=persona_enum,
                 use_llm_if_available=use_llm_opt,
-                custom_gemini_key=user_gemini_key if user_gemini_key else None
+                custom_gemini_key=user_gemini_key if user_gemini_key else None,
+                custom_hf_key=user_hf_key if user_hf_key else None,
+                hf_model=selected_hf_model
             )
 
             st.markdown("---")
