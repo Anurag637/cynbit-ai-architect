@@ -1,0 +1,54 @@
+================================================================================
+CYNBIT CANDIDATE PORTAL SUBMISSION GUIDE
+Role: AI/ML Engineer Intern
+Applicant: Anurag Pandey (anurag637@zohomail.in)
+Candidate Portal URL: https://www.cynbit.in/candidate/cmu2qy3wh000004lc0uqicfco
+================================================================================
+
+[FIELD 1] Primary Deliverable Link (GitHub Repo):
+https://github.com/Anurag637/cynbit-ai-architect
+
+--------------------------------------------------------------------------------
+[FIELD 2] Deliverable Link 2 (Interactive Colab / Walkthrough Notebook):
+https://github.com/Anurag637/cynbit-ai-architect/blob/main/notebooks/revio_ai_poc_walkthrough.ipynb
+
+--------------------------------------------------------------------------------
+[FIELD 3] Deliverable Link 3 (Strategic AI Opportunity Report):
+https://github.com/Anurag637/cynbit-ai-architect/blob/main/reports/AI_OPPORTUNITY_REPORT.md
+
+--------------------------------------------------------------------------------
+[FIELD 4] Deliverable Link 4 (Technical Approach & Architecture Blueprint):
+https://github.com/Anurag637/cynbit-ai-architect/blob/main/reports/TECHNICAL_APPROACH_REPORT.md
+
+--------------------------------------------------------------------------------
+[FIELD 5] Execution Notes & Strategy Rationale (Copy & Paste directly into portal):
+--------------------------------------------------------------------------------
+Dear Cynbit Technical Evaluation Team & Hiring Leads,
+
+I have completed the practical technical assessment for the AI/ML Engineer Intern role. Following an analysis of Cynbit Technologies' public offerings (Custom IT Systems, TenantEase, Cynbit Studio/BitElevate, and Revio), I identified and built a comprehensive solution for Cynbit's flagship SaaS product: "Revio 2.0: Autonomous Multi-Agent Brand Reputation & Crisis Intelligence Engine".
+
+Key Deliverables Delivered in this Repository:
+1. AI Opportunity Report (Deliverable 1): Strategic industry analysis evaluating 4 AI horizons for Cynbit (Revio 2.0, Cynbit Studio Architecture Evaluator, TenantEase Predictive Lease Risk, and Cynbit Nexus Pre-sales Blueprint Agent) with an objective feasibility vs. ARR impact matrix.
+2. Functional Proof of Concept (Deliverable 2): Production-ready Python implementation featuring:
+   - Aspect-Based Sentiment Analysis (ABSA) decomposing reviews into 6 operational facets (Service, Food Quality, Turnaround Time, Ambience, Pricing, Billing) with discourse clause segmentation and negation handling.
+   - Calibrated Crisis & Urgency Scoring (0-100%) detecting legal threats, health violations, and viral PR escalation with strict SLA containment windows.
+   - Multi-Agent Response Synthesizer with 4 brand personas, auto-ticket generation (#REV-XXXX), and deterministic zero-liability legal guardrails.
+   - Interactive Streamlit Command Center (app.py) with real-time KPI radars, live review testing lab, and multi-location branch leaderboards.
+   - Enterprise FastAPI Microservice (src/api.py) with Swagger documentation.
+3. Technical Approach Report (Deliverable 3): Detailed architecture blueprint covering compound AI design, sub-15ms CPU inference, Hinglish/code-mixing pre-processing, prompt templates, and AWS/Azure deployment roadmaps.
+4. Production Quality & Verification: 13/13 automated unit tests passed with 100% pass rate (pytest -v), Dockerfile containerization, and clean Git history.
+
+Local Setup Instructions:
+• Clone repo & install: pip install -r requirements.txt
+• Run Interactive Dashboard: streamlit run app.py
+• Run FastAPI Microservice: uvicorn src.api:app --reload --port 8000
+• Run Test Suite: python -m pytest -v
+
+Thank you for this practical challenge. I look forward to discussing the technical design and how I can contribute to Cynbit's autonomous agent initiatives!
+
+Best regards,
+Anurag Pandey
+B.Tech CSE (AI & ML), K. R. Mangalam University
+LinkedIn: https://www.linkedin.com/in/anurag637/
+GitHub: https://github.com/Anurag637
+================================================================================
