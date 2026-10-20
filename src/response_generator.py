@@ -189,7 +189,7 @@ class ResponseGenerator:
     ) -> Tuple[Optional[str], Optional[str]]:
         """Calls Hugging Face Serverless Inference Router (OpenAI-compatible chat completions)."""
         try:
-            url = "https://router.huggingface.co/hf-inference/v1/chat/completions"
+            url = "https://router.huggingface.co/v1/chat/completions"
             headers = {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}"

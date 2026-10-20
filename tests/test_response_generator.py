@@ -103,7 +103,7 @@ def test_huggingface_free_model_fallback_safety(response_gen, analyzer, detector
         persona=BrandPersona.WARM_CONCILIATORY,
         use_llm_if_available=True,
         custom_hf_key="hf_dummy_token_for_fallback_test",
-        hf_model="Qwen/Qwen2.5-7B-Instruct"
+        hf_model="meta-llama/Llama-3.1-8B-Instruct"
     )
     assert resp.hitl_status == "PENDING_HUMAN_APPROVAL"
     assert "Mumbai Bandra West Lab" in resp.response_text

@@ -551,12 +551,13 @@ with tab2:
             selected_hf_model = st.selectbox(
                 "Free Open Model:",
                 [
-                    "Qwen/Qwen2.5-7B-Instruct",
-                    "mistralai/Mistral-7B-Instruct-v0.3",
-                    "meta-llama/Llama-3.2-3B-Instruct"
+                    "meta-llama/Llama-3.1-8B-Instruct",
+                    "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B",
+                    "Qwen/Qwen2.5-Coder-7B-Instruct",
+                    "google/gemma-3-4b-it"
                 ],
                 index=0,
-                help="Qwen 2.5 7B is the #1 recommended free open model for customer service & instruction following (Apache 2.0)."
+                help="Meta Llama 3.1 8B & DeepSeek R1 are the top verified free models hosted on Hugging Face Serverless Router."
             )
         if user_hf_key:
             st.caption("✨ *Custom Hugging Face token will be used for live generation.*")
