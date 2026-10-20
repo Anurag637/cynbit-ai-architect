@@ -125,6 +125,10 @@ class ResponseGenerator:
                     methods = m.get("supportedGenerationMethods", [])
                     if "generateContent" in methods:
                         raw_id = m_name.replace("models/", "")
+                        lower_id = raw_id.lower()
+                        # Strictly skip audio-only, text-to-speech, embeddings, and image generation models
+                        if any(bad in lower_id for bad in ["tts", "audio", "embed", "imagen", "realtime", "live"]):
+                            continue
                         discovered_models.append(raw_id)
             else:
                 try:
@@ -135,25 +139,29 @@ class ResponseGenerator:
                 
                 # If Google explicitly flags invalid key or disabled API, return clear error immediately
                 if list_resp.status_code in [400, 403]:
-                    return None, f"Google Gemini Error ({list_diag})", None
+                    is_fatal = any(p in list_diag.lower() for p in ["api key not valid", "api_key_invalid", "permission_denied"])
+                    if is_fatal:
+                        return None, f"Google Gemini Error ({list_diag})", None
         except Exception as e:
             list_diag = f"Connection error: {str(e)}"
 
         # 2. Build prioritized candidate list:
-        # Match discovered models against preferred high-performance flash models
+        # Match discovered models against preferred high-performance flash text models
         candidate_list = []
         preferred_order = [
             "gemini-2.0-flash",
             "gemini-1.5-flash",
+            "gemini-1.5-flash-8b",
             "gemini-2.0-flash-lite",
             "gemini-1.5-pro",
             "gemini-pro"
         ]
         for pref in preferred_order:
             for dm in discovered_models:
-                item = ("v1beta", dm)
-                if pref in dm and item not in candidate_list:
-                    candidate_list.append(item)
+                if dm == pref or dm.startswith(f"{pref}-"):
+                    item = ("v1beta", dm)
+                    if item not in candidate_list:
+                        candidate_list.append(item)
 
         for dm in discovered_models:
             item = ("v1beta", dm)
@@ -211,11 +219,13 @@ class ResponseGenerator:
                     except Exception:
                         err_msg = f"HTTP {resp.status_code}"
                     
-                    # If key is invalid or blocked, abort immediately
-                    if resp.status_code in [400, 403]:
+                    # Only abort if the API key itself is definitively invalid
+                    is_fatal_auth = any(phrase in err_msg.lower() for phrase in ["api key not valid", "api_key_invalid", "permission_denied", "consumer identity"])
+                    if resp.status_code in [400, 403] and is_fatal_auth:
                         return None, f"Google Gemini Error: {err_msg}", None
                     
-                    last_error = f"Gemini model {model_id} ({api_version}) returned {resp.status_code}: {err_msg}"
+                    # Modality mismatch or model not found -> continue to next candidate!
+                    last_error = f"Gemini ({model_id}): {err_msg}"
                     continue
             except Exception as e:
                 last_error = f"Gemini connection error: {str(e)}"
