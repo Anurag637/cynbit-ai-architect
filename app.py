@@ -538,14 +538,12 @@ with tab2:
         )
         status_badges = []
         if gemini_k:
-            masked_g = f"{gemini_k[:6]}...{gemini_k[-4:]}" if len(gemini_k) > 10 else "Active"
-            status_badges.append(f"🟢 **Google Gemini:** `{masked_g}`")
+            status_badges.append("🟢 **Google Gemini:** `Securely Connected (Server-Side)`")
         else:
             status_badges.append("⚪ **Google Gemini:** *Not Found*")
 
         if hf_k:
-            masked_hf = f"{hf_k[:5]}...{hf_k[-4:]}" if len(hf_k) > 9 else "Active"
-            status_badges.append(f"🟢 **Hugging Face:** `{masked_hf}`")
+            status_badges.append("🟢 **Hugging Face:** `Securely Connected (Server-Side)`")
         else:
             status_badges.append("⚪ **Hugging Face:** *Not Found*")
 
