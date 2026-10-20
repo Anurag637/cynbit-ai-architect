@@ -106,17 +106,73 @@ class ResponseGenerator:
         system_instruction: str,
         api_key: str
     ) -> Tuple[Optional[str], Optional[str], Optional[str]]:
-        """Calls Google Gemini REST endpoint directly across active versions and models."""
+        """Calls Google Gemini REST endpoint directly with dynamic model discovery and multi-version fallback."""
         clean_key = api_key.strip().strip('"\'')
-        candidate_endpoints = [
-            ("v1beta", "gemini-2.0-flash"),
-            ("v1beta", "gemini-1.5-flash"),
-            ("v1", "gemini-1.5-flash"),
-            ("v1beta", "gemini-2.0-flash-lite"),
-            ("v1beta", "gemini-1.5-pro")
+        if clean_key.startswith("hf_"):
+            return None, "Configured key starts with 'hf_', which is a Hugging Face token. Google Gemini API keys start with 'AIzaSy'.", None
+
+        # 1. Query Google to discover which models this specific API key is authorized to use
+        discovered_models = []
+        list_diag = None
+        try:
+            list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={clean_key}"
+            list_resp = requests.get(list_url, timeout=8)
+            if list_resp.status_code == 200:
+                models_data = list_resp.json().get("models", [])
+                for m in models_data:
+                    m_name = m.get("name", "")
+                    methods = m.get("supportedGenerationMethods", [])
+                    if "generateContent" in methods:
+                        raw_id = m_name.replace("models/", "")
+                        discovered_models.append(raw_id)
+            else:
+                try:
+                    err_data = list_resp.json().get("error", {})
+                    list_diag = err_data.get("message", f"HTTP {list_resp.status_code}")
+                except Exception:
+                    list_diag = f"HTTP {list_resp.status_code}"
+                
+                # If Google explicitly flags invalid key or disabled API, return clear error immediately
+                if list_resp.status_code in [400, 403]:
+                    return None, f"Google Gemini Error ({list_diag})", None
+        except Exception as e:
+            list_diag = f"Connection error: {str(e)}"
+
+        # 2. Build prioritized candidate list:
+        # Match discovered models against preferred high-performance flash models
+        candidate_list = []
+        preferred_order = [
+            "gemini-2.0-flash",
+            "gemini-1.5-flash",
+            "gemini-2.0-flash-lite",
+            "gemini-1.5-pro",
+            "gemini-pro"
         ]
-        last_error = None
-        for api_version, model_id in candidate_endpoints:
+        for pref in preferred_order:
+            for dm in discovered_models:
+                item = ("v1beta", dm)
+                if pref in dm and item not in candidate_list:
+                    candidate_list.append(item)
+
+        for dm in discovered_models:
+            item = ("v1beta", dm)
+            if "gemini" in dm and item not in candidate_list:
+                candidate_list.append(item)
+
+        # If dynamic discovery did not populate (e.g. ListModels permission issue), use standard static candidates
+        if not candidate_list:
+            candidate_list = [
+                ("v1beta", "gemini-2.0-flash"),
+                ("v1beta", "gemini-1.5-flash"),
+                ("v1", "gemini-1.5-flash"),
+                ("v1beta", "gemini-2.0-flash-lite"),
+                ("v1beta", "gemini-1.5-pro"),
+                ("v1beta", "gemini-pro")
+            ]
+
+        # 3. Call generateContent on candidate models
+        last_error = list_diag
+        for api_version, model_id in candidate_list:
             try:
                 url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_id}:generateContent?key={clean_key}"
                 headers = {"Content-Type": "application/json"}
@@ -144,18 +200,22 @@ class ResponseGenerator:
                         if parts:
                             return parts[0].get("text", "").strip(), None, model_id
                     return None, "Gemini returned empty candidate output", None
-                elif resp.status_code == 404:
-                    last_error = f"Gemini model {model_id} ({api_version}) not available"
-                    continue
                 else:
                     try:
                         err_json = resp.json()
                         err_msg = err_json.get("error", {}).get("message", f"HTTP {resp.status_code}")
                     except Exception:
                         err_msg = f"HTTP {resp.status_code}"
-                    return None, f"Gemini error ({err_msg})", None
+                    
+                    # If key is invalid or blocked, abort immediately
+                    if resp.status_code in [400, 403]:
+                        return None, f"Google Gemini Error: {err_msg}", None
+                    
+                    last_error = f"Gemini model {model_id} ({api_version}) returned {resp.status_code}: {err_msg}"
+                    continue
             except Exception as e:
                 last_error = f"Gemini connection error: {str(e)}"
+
         return None, last_error or "Gemini API could not find an available model", None
 
     def _call_openai_llm(
