@@ -522,10 +522,24 @@ with tab2:
             index=0
         )
     with c_opt2:
+        has_env_key = bool(GEMINI_API_KEY or OPENAI_API_KEY)
         use_llm_opt = st.checkbox(
-            "Enable Optional LLM Generation (if API Key configured in .env)",
-            value=True,
-            help="If unchecked or if API key is absent, Revio uses safe deterministic policy templates."
+            "Enable Optional LLM Generation (Gemini 1.5 Flash)",
+            value=has_env_key,
+            help="If unchecked or if no key is provided, Revio uses safe offline deterministic policy templates."
+        )
+        if has_env_key:
+            st.caption("🟢 **API Key Active:** Connected via environment / Streamlit Secrets.")
+        else:
+            st.caption("ℹ️ **Offline Mode:** No API Key detected. Using safe deterministic policy templates (100% Free / Offline).")
+
+    user_gemini_key = None
+    if use_llm_opt and not has_env_key:
+        user_gemini_key = st.text_input(
+            "🔑 Optional: Enter Google Gemini API Key to test live LLM (leave blank for offline templates):",
+            type="password",
+            placeholder="AIzaSy...",
+            help="Optional. Get a free key at https://aistudio.google.com/app/apikey. If left blank, offline templates are used."
         )
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
@@ -539,7 +553,8 @@ with tab2:
                 analysis=analysis,
                 crisis=crisis,
                 persona=persona_enum,
-                use_llm_if_available=use_llm_opt
+                use_llm_if_available=use_llm_opt,
+                custom_gemini_key=user_gemini_key if user_gemini_key else None
             )
 
             st.markdown("---")

@@ -22,9 +22,19 @@ SUPPORT_EMAIL: str = os.getenv("SUPPORT_EMAIL", "care@cynbit.in")
 ESCALATION_EMAIL: str = os.getenv("ESCALATION_EMAIL", "executive-care@cynbit.in")
 SUPPORT_PHONE: str = os.getenv("SUPPORT_PHONE", "+91-89479-62667")
 
-# Optional LLM API Keys
+# Optional LLM API Keys (read from environment or Streamlit Cloud secrets)
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
 OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "")
+
+try:
+    import streamlit as st
+    if hasattr(st, "secrets"):
+        if not GEMINI_API_KEY and "GEMINI_API_KEY" in st.secrets:
+            GEMINI_API_KEY = str(st.secrets["GEMINI_API_KEY"])
+        if not OPENAI_API_KEY and "OPENAI_API_KEY" in st.secrets:
+            OPENAI_API_KEY = str(st.secrets["OPENAI_API_KEY"])
+except Exception:
+    pass
 
 
 class Sentiment(str, Enum):

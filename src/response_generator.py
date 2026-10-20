@@ -168,7 +168,8 @@ class ResponseGenerator:
         analysis: ReviewAnalysis,
         crisis: CrisisEvaluation,
         persona: BrandPersona = BrandPersona.EMPATHETIC_RESOLUTION,
-        use_llm_if_available: bool = True
+        use_llm_if_available: bool = True,
+        custom_gemini_key: Optional[str] = None
     ) -> GeneratedResponse:
         first_name = customer_name.split()[0] if customer_name else "Valued Guest"
         ticket_id = None
@@ -237,8 +238,9 @@ class ResponseGenerator:
                 "Please draft the official reply."
             )
 
-            if GEMINI_API_KEY:
-                llm_response = self._call_gemini_llm(user_prompt, system_instruction, GEMINI_API_KEY)
+            active_gemini_key = custom_gemini_key or GEMINI_API_KEY
+            if active_gemini_key:
+                llm_response = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
                 if llm_response:
                     generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
             elif OPENAI_API_KEY:
