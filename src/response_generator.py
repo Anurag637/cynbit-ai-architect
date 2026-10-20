@@ -16,7 +16,7 @@ import re
 import hashlib
 import random
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple
 import requests
 
 from src.config import (
@@ -47,7 +47,8 @@ class GeneratedResponse:
         guardrail_passed: bool,
         guardrail_warnings: List[str],
         actionable_steps: List[str],
-        generation_source: str = "Deterministic Policy Template (Fallback)"
+        generation_source: str = "Deterministic Policy Template (Fallback)",
+        llm_error: Optional[str] = None
     ):
         self.response_text = response_text
         self.persona = persona
@@ -58,6 +59,7 @@ class GeneratedResponse:
         self.guardrail_warnings = guardrail_warnings
         self.actionable_steps = actionable_steps
         self.generation_source = generation_source
+        self.llm_error = llm_error
 
     def to_dict(self) -> Dict:
         return {
@@ -69,7 +71,8 @@ class GeneratedResponse:
             "guardrail_passed": self.guardrail_passed,
             "guardrail_warnings": self.guardrail_warnings,
             "actionable_steps": self.actionable_steps,
-            "generation_source": self.generation_source
+            "generation_source": self.generation_source,
+            "llm_error": self.llm_error
         }
 
 
@@ -99,7 +102,7 @@ class ResponseGenerator:
         prompt: str,
         system_instruction: str,
         api_key: str
-    ) -> Optional[str]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Calls Google Gemini REST endpoint directly without heavy third-party agent frameworks."""
         try:
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
@@ -126,17 +129,24 @@ class ResponseGenerator:
                 if candidates:
                     parts = candidates[0].get("content", {}).get("parts", [])
                     if parts:
-                        return parts[0].get("text", "").strip()
-        except Exception:
-            return None
-        return None
+                        return parts[0].get("text", "").strip(), None
+                return None, "Gemini returned empty candidate output"
+            else:
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                except Exception:
+                    err_msg = f"HTTP {resp.status_code}"
+                return None, f"Gemini error ({err_msg})"
+        except Exception as e:
+            return None, f"Gemini connection error: {str(e)}"
 
     def _call_openai_llm(
         self,
         prompt: str,
         system_instruction: str,
         api_key: str
-    ) -> Optional[str]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Calls OpenAI chat completions endpoint."""
         try:
             url = "https://api.openai.com/v1/chat/completions"
@@ -158,10 +168,17 @@ class ResponseGenerator:
                 data = resp.json()
                 choices = data.get("choices", [])
                 if choices:
-                    return choices[0].get("message", {}).get("content", "").strip()
-        except Exception:
-            return None
-        return None
+                    return choices[0].get("message", {}).get("content", "").strip(), None
+                return None, "OpenAI returned empty message"
+            else:
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                except Exception:
+                    err_msg = f"HTTP {resp.status_code}"
+                return None, f"OpenAI error ({err_msg})"
+        except Exception as e:
+            return None, f"OpenAI connection error: {str(e)}"
 
     def _call_huggingface_llm(
         self,
@@ -169,7 +186,7 @@ class ResponseGenerator:
         system_instruction: str,
         api_key: str,
         model_id: str = HUGGINGFACE_MODEL
-    ) -> Optional[str]:
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Calls Hugging Face Serverless Inference Router (OpenAI-compatible chat completions)."""
         try:
             url = "https://router.huggingface.co/hf-inference/v1/chat/completions"
@@ -191,10 +208,19 @@ class ResponseGenerator:
                 data = resp.json()
                 choices = data.get("choices", [])
                 if choices:
-                    return choices[0].get("message", {}).get("content", "").strip()
-        except Exception:
-            return None
-        return None
+                    return choices[0].get("message", {}).get("content", "").strip(), None
+                return None, "Hugging Face returned empty choices"
+            else:
+                try:
+                    err_json = resp.json()
+                    err_msg = err_json.get("error", f"HTTP {resp.status_code}")
+                    if isinstance(err_msg, dict):
+                        err_msg = err_msg.get("message", str(err_msg))
+                except Exception:
+                    err_msg = f"HTTP {resp.status_code}"
+                return None, f"Hugging Face error ({err_msg})"
+        except Exception as e:
+            return None, f"Hugging Face connection error: {str(e)}"
 
     def generate(
         self,
@@ -254,6 +280,7 @@ class ResponseGenerator:
         # Attempt Optional LLM Generation (if configured and requested)
         # -------------------------------------------------------------
         llm_response = None
+        llm_error = None
         if use_llm_if_available:
             system_instruction = (
                 f"You are a professional customer relations AI representing {self.brand_name}. "
@@ -280,23 +307,32 @@ class ResponseGenerator:
             active_hf_key = custom_hf_key or HUGGINGFACE_API_KEY
             if active_hf_key:
                 selected_hf_model = hf_model or HUGGINGFACE_MODEL or "Qwen/Qwen2.5-7B-Instruct"
-                llm_response = self._call_huggingface_llm(user_prompt, system_instruction, active_hf_key, selected_hf_model)
+                llm_response, err = self._call_huggingface_llm(user_prompt, system_instruction, active_hf_key, selected_hf_model)
                 if llm_response:
                     generation_source = f"Hugging Face Free Inference ({selected_hf_model})"
+                    llm_error = None
+                else:
+                    llm_error = err
 
             # 2. Google Gemini 1.5 Flash
             if not llm_response:
                 active_gemini_key = custom_gemini_key or GEMINI_API_KEY
                 if active_gemini_key:
-                    llm_response = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
+                    llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, active_gemini_key)
                     if llm_response:
                         generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
+                        llm_error = None
+                    else:
+                        llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
 
             # 3. OpenAI GPT-4o-mini
             if not llm_response and OPENAI_API_KEY:
-                llm_response = self._call_openai_llm(user_prompt, system_instruction, OPENAI_API_KEY)
+                llm_response, err = self._call_openai_llm(user_prompt, system_instruction, OPENAI_API_KEY)
                 if llm_response:
                     generation_source = "OpenAI GPT-4o-mini (Grounded LLM)"
+                    llm_error = None
+                else:
+                    llm_error = (f"{llm_error}; " if llm_error else "") + str(err)
 
         # -------------------------------------------------------------
         # Deterministic Safe Template Fallback
@@ -386,5 +422,6 @@ class ResponseGenerator:
             guardrail_passed=guardrail_passed,
             guardrail_warnings=guardrail_warnings,
             actionable_steps=actionable_steps,
-            generation_source=generation_source
+            generation_source=generation_source,
+            llm_error=llm_error
         )

@@ -676,6 +676,11 @@ with tab2:
                 </div>
                 """, unsafe_allow_html=True)
 
+                if getattr(resp, "llm_error", None):
+                    st.warning(f"⚠️ **LLM Fallback Activated:** {resp.llm_error}\n\n*Revio safely preserved continuity by reverting to the verified deterministic policy template.*")
+                elif any(k in resp.generation_source for k in ["Hugging Face", "Gemini", "OpenAI"]):
+                    st.success(f"✨ **Live AI Generation Active:** Drafted directly via `{resp.generation_source}`.")
+
                 # Editable response area for Human-in-the-Loop approval
                 st.markdown("<br><b>Draft Response (Human Review & Edit):</b>", unsafe_allow_html=True)
                 approved_response_text = st.text_area(
