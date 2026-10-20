@@ -58,7 +58,7 @@ While generic reputation management platforms merely compute high-level star ave
                                                   │
                                                   ▼
                    +-------------------------------------------------------------+
-                   |             Multi-Agent Response Drafting Synthesizer       |
+                   |         Persona-Calibrated Response Synthesizer             |
                    |  - Persona Alignment (Empathetic / Formal / Warm / Exec)    |
                    |  - Safe Offline Policy Templates (Deterministic Fallback)   |
                    |  - Pluggable LLM Provider Hook (Gemini / OpenAI via .env)   |
@@ -185,11 +185,11 @@ Copy-Item .env.example .env
 pip install -r requirements.txt
 ```
 
-### 2. Run the Full Automated Test Suite (19 Tests)
+### 2. Run the Full Automated Test Suite (31 Tests)
 ```powershell
 python -m pytest -v
 ```
-*Expected Result:* **19 passed in ~1.0s (100% test pass rate across parsing, classification, guardrails, and APIs).**
+*Expected Result:* **31 passed in ~1.0s (100% test pass rate across parsing, classification, guardrails, and APIs).**
 
 ### 3. Run the Empirical Benchmark Evaluation
 ```powershell

@@ -361,7 +361,7 @@ with tab1:
                 height=340,
                 coloraxis_showscale=False
             )
-            st.plotly_chart(fig_bar, use_container_width=True)
+            st.plotly_chart(fig_bar, width='stretch')
 
     with c_right:
         st.markdown("##### 🌐 Sentiment & Platform Distribution")
@@ -384,7 +384,7 @@ with tab1:
                 margin=dict(l=20, r=20, t=10, b=20),
                 height=340
             )
-            st.plotly_chart(fig_pie, use_container_width=True)
+            st.plotly_chart(fig_pie, width='stretch')
 
     st.markdown("---")
     st.markdown("##### 🏆 Multi-Branch Comparative Performance Table")
@@ -410,7 +410,7 @@ with tab1:
                 "Crisis Rate (%)": st.column_config.NumberColumn(format="%.1f%%")
             },
             hide_index=True,
-            use_container_width=True
+            width='stretch'
         )
 
     # Export Section
@@ -528,7 +528,7 @@ with tab2:
             help="If unchecked or if API key is absent, Revio uses safe deterministic policy templates."
         )
 
-    if st.button("🚀 Analyze & Generate Governed Response", type="primary", use_container_width=True):
+    if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):
             analysis = analyzer.analyze(input_text, in_rating)
             crisis = crisis_detector.evaluate(input_text, in_rating)
@@ -647,10 +647,10 @@ with tab2:
                 # Human sign-off action buttons
                 col_btn1, col_btn2 = st.columns(2)
                 with col_btn1:
-                    if st.button("✅ Approve Response (Sign-off)", use_container_width=True):
+                    if st.button("✅ Approve Response (Sign-off)", width='stretch'):
                         st.success("Response approved by Human Reviewer! Status: APPROVED_FOR_DISPATCH (Simulated)")
                 with col_btn2:
-                    if st.button("🚀 Simulate Public Post (Google Maps / Yelp)", use_container_width=True):
+                    if st.button("🚀 Simulate Public Post (Google Maps / Yelp)", width='stretch'):
                         st.toast("Simulated API dispatch: Response pushed to mock connector! (No real external requests sent)", icon="📢")
 
 
@@ -730,7 +730,7 @@ with tab4:
                 data=rep1_text,
                 file_name="Cynbit_AI_Opportunity_Report_Anurag_Pandey.md",
                 mime="text/markdown",
-                use_container_width=True
+                width='stretch'
             )
         except Exception as e:
             st.error(f"Report not found: {e}")
@@ -751,7 +751,7 @@ with tab4:
                 data=rep2_text,
                 file_name="Cynbit_Technical_Approach_Report_Anurag_Pandey.md",
                 mime="text/markdown",
-                use_container_width=True
+                width='stretch'
             )
         except Exception as e:
             st.error(f"Report not found: {e}")
@@ -772,7 +772,7 @@ with tab4:
                 data=eval_json,
                 file_name="revio_empirical_evaluation_results.json",
                 mime="application/json",
-                use_container_width=True
+                width='stretch'
             )
         except Exception:
             st.info("Evaluation results will appear after running evaluate.py")
@@ -837,7 +837,7 @@ with tab4:
                                                   │
                                                   ▼
                    +-------------------------------------------------------------+
-                   |           Multi-Agent Contextual Response Synthesizer       |
+                   |         Persona-Calibrated Response Synthesizer            |
                    |  (Policy Persona Engine + Safe Offline Fallback + LLM Hook) |
                    +-------------------------------------------------------------+
                                                   │

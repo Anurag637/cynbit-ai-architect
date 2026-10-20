@@ -1,5 +1,5 @@
 """
-Revio 2.0 Multi-Agent Response Generation Engine
+Revio 2.0 Persona-Calibrated Response Generation Engine
 Produces persona-aligned, brand-grounded responses with safety guardrails and Human-in-the-Loop workflows.
 
 Safety & Compliance Rules:

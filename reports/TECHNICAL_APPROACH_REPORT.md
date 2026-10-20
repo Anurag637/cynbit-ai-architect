@@ -38,7 +38,7 @@ Revio 2.0 is designed as a **Compound AI System** combining deterministic pre-pr
                                                      │
                                                      ▼
                       +-------------------------------------------------------------+
-                      |             Multi-Agent Response Drafting Synthesizer       |
+                      |         Persona-Calibrated Response Synthesizer             |
                       |  - Persona Alignment (Empathetic / Formal / Warm / Exec)    |
                       |  - Safe Offline Policy Templates (Deterministic Fallback)   |
                       |  - Pluggable LLM Provider Hook (Gemini / OpenAI via .env)   |
