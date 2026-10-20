@@ -536,11 +536,22 @@ with tab2:
             value=has_secret_key,
             help="If checked, Revio generates responses using your configured API key in Streamlit Secrets. If unchecked, safe offline policy templates are used."
         )
-        if has_secret_key:
-            active_provider = "Google Gemini" if gemini_k else ("Hugging Face" if hf_k else "OpenAI")
-            st.caption(f"🟢 **Connected via Streamlit Secrets:** Active Provider: **{active_provider}**.")
+        status_badges = []
+        if gemini_k:
+            masked_g = f"{gemini_k[:6]}...{gemini_k[-4:]}" if len(gemini_k) > 10 else "Active"
+            status_badges.append(f"🟢 **Google Gemini:** `{masked_g}`")
         else:
-            st.caption("ℹ️ **Deterministic Mode:** Using safe offline templates (100% Free / Offline). To enable live AI, add `GEMINI_API_KEY = \"AIzaSy...\"` to **Manage app > Settings > Secrets**.")
+            status_badges.append("⚪ **Google Gemini:** *Not Found*")
+
+        if hf_k:
+            masked_hf = f"{hf_k[:5]}...{hf_k[-4:]}" if len(hf_k) > 9 else "Active"
+            status_badges.append(f"🟢 **Hugging Face:** `{masked_hf}`")
+        else:
+            status_badges.append("⚪ **Hugging Face:** *Not Found*")
+
+        st.caption(" &nbsp;|&nbsp; ".join(status_badges))
+        if not has_secret_key:
+            st.caption("ℹ️ **Deterministic Mode Active:** (To enable live AI, add `GEMINI_API_KEY = \"AIzaSy...\"` in **Manage app > Settings > Secrets**).")
 
     if st.button("🚀 Analyze & Generate Governed Response", type="primary", width='stretch'):
         with st.spinner("Decomposing aspects, evaluating risk screening, and applying guardrails..."):

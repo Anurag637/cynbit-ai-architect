@@ -116,7 +116,8 @@ class ResponseGenerator:
         list_diag = None
         try:
             list_url = f"https://generativelanguage.googleapis.com/v1beta/models?key={clean_key}"
-            list_resp = requests.get(list_url, timeout=8)
+            list_headers = {"x-goog-api-key": clean_key}
+            list_resp = requests.get(list_url, headers=list_headers, timeout=8)
             if list_resp.status_code == 200:
                 models_data = list_resp.json().get("models", [])
                 for m in models_data:
@@ -175,7 +176,10 @@ class ResponseGenerator:
         for api_version, model_id in candidate_list:
             try:
                 url = f"https://generativelanguage.googleapis.com/{api_version}/models/{model_id}:generateContent?key={clean_key}"
-                headers = {"Content-Type": "application/json"}
+                headers = {
+                    "Content-Type": "application/json",
+                    "x-goog-api-key": clean_key
+                }
                 payload = {
                     "contents": [
                         {
@@ -215,6 +219,30 @@ class ResponseGenerator:
                     continue
             except Exception as e:
                 last_error = f"Gemini connection error: {str(e)}"
+
+        # 4. Fallback: Try the Google Interactions API endpoint
+        try:
+            int_url = f"https://generativelanguage.googleapis.com/v1beta/interactions?key={clean_key}"
+            int_headers = {
+                "Content-Type": "application/json",
+                "x-goog-api-key": clean_key
+            }
+            int_payload = {
+                "model": "gemini-2.0-flash",
+                "input": f"{system_instruction}\n\n{prompt}"
+            }
+            int_resp = requests.post(int_url, headers=int_headers, json=int_payload, timeout=10)
+            if int_resp.status_code == 200:
+                int_data = int_resp.json()
+                for step in int_data.get("steps", []):
+                    if step.get("type") == "model_output":
+                        for c in step.get("content", []):
+                            if c.get("type") == "text" and c.get("text"):
+                                return c.get("text").strip(), None, "gemini-2.0-flash"
+                if int_data.get("output_text"):
+                    return int_data.get("output_text").strip(), None, "gemini-2.0-flash"
+        except Exception:
+            pass
 
         return None, last_error or "Gemini API could not find an available model", None
 

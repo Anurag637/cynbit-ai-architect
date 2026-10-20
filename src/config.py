@@ -27,18 +27,29 @@ def get_gemini_api_key() -> str:
     try:
         import streamlit as st
         if hasattr(st, "secrets"):
-            for k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY", "google_api_key", "GEMINI_KEY", "gemini_key"]:
+            for k in ["GEMINI_API_KEY", "gemini_api_key", "GOOGLE_API_KEY", "google_api_key", "GEMINI_KEY", "gemini_key", "GEMINI", "gemini", "GOOGLE_AI_KEY"]:
                 if k in st.secrets and st.secrets[k]:
                     return str(st.secrets[k]).strip().strip('"\'')
             if "gemini" in st.secrets and isinstance(st.secrets["gemini"], dict):
                 for k in ["api_key", "key"]:
                     if k in st.secrets["gemini"] and st.secrets["gemini"][k]:
                         return str(st.secrets["gemini"][k]).strip().strip('"\'')
+            # Content auto-detection: scan ALL secret values for Google AI key prefix (AIzaSy)
+            for k, v in st.secrets.items():
+                if isinstance(v, str) and v.strip().strip('"\'').startswith("AIzaSy"):
+                    return v.strip().strip('"\'')
+                if isinstance(v, dict):
+                    for sub_k, sub_v in v.items():
+                        if isinstance(sub_v, str) and sub_v.strip().strip('"\'').startswith("AIzaSy"):
+                            return sub_v.strip().strip('"\'')
     except Exception:
         pass
     for k in ["GEMINI_API_KEY", "GOOGLE_API_KEY", "GEMINI_KEY"]:
         v = os.getenv(k)
         if v:
+            return v.strip().strip('"\'')
+    for k, v in os.environ.items():
+        if isinstance(v, str) and v.strip().strip('"\'').startswith("AIzaSy"):
             return v.strip().strip('"\'')
     return ""
 
@@ -48,18 +59,29 @@ def get_huggingface_api_key() -> str:
     try:
         import streamlit as st
         if hasattr(st, "secrets"):
-            for k in ["HUGGINGFACE_API_KEY", "huggingface_api_key", "HF_TOKEN", "hf_token", "HUGGING_FACE_HUB_TOKEN", "hugging_face_hub_token"]:
+            for k in ["HUGGINGFACE_API_KEY", "huggingface_api_key", "HF_TOKEN", "hf_token", "HUGGING_FACE_HUB_TOKEN", "hugging_face_hub_token", "HUGGINGFACE", "huggingface"]:
                 if k in st.secrets and st.secrets[k]:
                     return str(st.secrets[k]).strip().strip('"\'')
             if "huggingface" in st.secrets and isinstance(st.secrets["huggingface"], dict):
                 for k in ["api_key", "token"]:
                     if k in st.secrets["huggingface"] and st.secrets["huggingface"][k]:
                         return str(st.secrets["huggingface"][k]).strip().strip('"\'')
+            # Content auto-detection: scan ALL secret values for Hugging Face token prefix (hf_)
+            for k, v in st.secrets.items():
+                if isinstance(v, str) and v.strip().strip('"\'').startswith("hf_"):
+                    return v.strip().strip('"\'')
+                if isinstance(v, dict):
+                    for sub_k, sub_v in v.items():
+                        if isinstance(sub_v, str) and sub_v.strip().strip('"\'').startswith("hf_"):
+                            return sub_v.strip().strip('"\'')
     except Exception:
         pass
     for k in ["HUGGINGFACE_API_KEY", "HF_TOKEN", "HUGGING_FACE_HUB_TOKEN"]:
         v = os.getenv(k)
         if v:
+            return v.strip().strip('"\'')
+    for k, v in os.environ.items():
+        if isinstance(v, str) and v.strip().strip('"\'').startswith("hf_"):
             return v.strip().strip('"\'')
     return ""
 
