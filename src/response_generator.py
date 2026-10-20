@@ -104,42 +104,49 @@ class ResponseGenerator:
         api_key: str
     ) -> Tuple[Optional[str], Optional[str]]:
         """Calls Google Gemini REST endpoint directly without heavy third-party agent frameworks."""
-        try:
-            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={api_key}"
-            headers = {"Content-Type": "application/json"}
-            payload = {
-                "contents": [
-                    {
-                        "role": "user",
-                        "parts": [{"text": prompt}]
+        candidate_models = ["gemini-2.0-flash", "gemini-2.5-flash", "gemini-1.5-flash-latest"]
+        last_error = None
+        for model_id in candidate_models:
+            try:
+                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_id}:generateContent?key={api_key}"
+                headers = {"Content-Type": "application/json"}
+                payload = {
+                    "contents": [
+                        {
+                            "role": "user",
+                            "parts": [{"text": prompt}]
+                        }
+                    ],
+                    "systemInstruction": {
+                        "parts": [{"text": system_instruction}]
+                    },
+                    "generationConfig": {
+                        "temperature": 0.3,
+                        "maxOutputTokens": 300
                     }
-                ],
-                "systemInstruction": {
-                    "parts": [{"text": system_instruction}]
-                },
-                "generationConfig": {
-                    "temperature": 0.3,
-                    "maxOutputTokens": 300
                 }
-            }
-            resp = requests.post(url, headers=headers, json=payload, timeout=8)
-            if resp.status_code == 200:
-                data = resp.json()
-                candidates = data.get("candidates", [])
-                if candidates:
-                    parts = candidates[0].get("content", {}).get("parts", [])
-                    if parts:
-                        return parts[0].get("text", "").strip(), None
-                return None, "Gemini returned empty candidate output"
-            else:
-                try:
-                    err_json = resp.json()
-                    err_msg = err_json.get("error", {}).get("message", f"HTTP {resp.status_code}")
-                except Exception:
-                    err_msg = f"HTTP {resp.status_code}"
-                return None, f"Gemini error ({err_msg})"
-        except Exception as e:
-            return None, f"Gemini connection error: {str(e)}"
+                resp = requests.post(url, headers=headers, json=payload, timeout=8)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    candidates = data.get("candidates", [])
+                    if candidates:
+                        parts = candidates[0].get("content", {}).get("parts", [])
+                        if parts:
+                            return parts[0].get("text", "").strip(), None
+                    return None, "Gemini returned empty candidate output"
+                elif resp.status_code == 404:
+                    last_error = f"Gemini model {model_id} not available"
+                    continue
+                else:
+                    try:
+                        err_json = resp.json()
+                        err_msg = err_json.get("error", {}).get("message", f"HTTP {resp.status_code}")
+                    except Exception:
+                        err_msg = f"HTTP {resp.status_code}"
+                    return None, f"Gemini error ({err_msg})"
+            except Exception as e:
+                last_error = f"Gemini connection error: {str(e)}"
+        return None, last_error or "Gemini API could not find an available model"
 
     def _call_openai_llm(
         self,
@@ -307,7 +314,7 @@ class ResponseGenerator:
                 # 1. User explicitly provided custom Gemini API key
                 llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, custom_gemini_key)
                 if llm_response:
-                    generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
+                    generation_source = "Google Gemini 2.0 Flash (Grounded LLM)"
                     llm_error = None
                 else:
                     llm_error = err
@@ -325,7 +332,7 @@ class ResponseGenerator:
                 if GEMINI_API_KEY:
                     llm_response, err = self._call_gemini_llm(user_prompt, system_instruction, GEMINI_API_KEY)
                     if llm_response:
-                        generation_source = "Google Gemini 1.5 Flash (Grounded LLM)"
+                        generation_source = "Google Gemini 2.0 Flash (Grounded LLM)"
                         llm_error = None
                     else:
                         llm_error = err

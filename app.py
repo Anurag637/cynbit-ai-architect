@@ -689,10 +689,14 @@ with tab2:
                 """, unsafe_allow_html=True)
 
                 if getattr(resp, "llm_error", None):
-                    st.warning(
-                        f"⚠️ **LLM Fallback Activated:** {resp.llm_error}\n\n"
-                        "💡 **How to resolve:** Paste your active Hugging Face token (starts with `hf_...`) directly into the input box above, then click **'🚀 Analyze & Generate Governed Response'**. Revio will then generate live via the open model!"
-                    )
+                    err_text = str(resp.llm_error)
+                    if "Gemini" in err_text:
+                        tip = "💡 **How to resolve:** Ensure your Google Gemini key (starts with `AIzaSy...`) is active at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey), then click **'🚀 Analyze & Generate Governed Response'**."
+                    elif "credits" in err_text.lower():
+                        tip = "💡 **How to resolve:** Hugging Face serverless router requires pre-paid credits. Please switch to the **Google Gemini** option above for 100% free generation without credits!"
+                    else:
+                        tip = "💡 **How to resolve:** Check that your API key is correctly pasted in the box above, then click **'🚀 Analyze & Generate Governed Response'**."
+                    st.warning(f"⚠️ **LLM Fallback Activated:** {resp.llm_error}\n\n{tip}")
                 elif any(k in resp.generation_source for k in ["Hugging Face", "Gemini", "OpenAI"]):
                     st.success(f"✨ **Live AI Generation Active:** Drafted directly via `{resp.generation_source}`.")
 
