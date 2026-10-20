@@ -1,0 +1,18 @@
+review_text,star_rating,branch_name,date,customer_name,platform
+"EMERGENCY: Three of us woke up with severe vomiting and food poisoning after eating the seafood here. My brother is admitted to the hospital. Reporting to municipal health inspectors and police!",1,Jaipur Malviya Nagar Flagship,2026-10-18,Rohan Malhotra,Google Maps
+"Absolute fraud! Found an unauthorized charge of Rs. 4,500 on my credit card statement that was never on my receipt. Cashier refused an invoice. My lawyer is taking this to consumer court tomorrow.",1,Jaipur Pratap Nagar Tech Hub,2026-10-18,Meera Sen,Yelp
+"Floor manager started shouting and used abusive language towards my elderly mother when we asked about our 50 min delay. We felt threatened and unsafe. Never stepping foot here again.",1,Gurugram CyberCity Premier,2026-10-19,Vikramaditya Rathore,Google Maps
+"Found a dead cockroach inside the salad bowl! The waiter silently took the plate away without even apologizing. Gross hygiene violation. Taking photos to Twitter and local health department.",1,Bengaluru Indiranagar Center,2026-10-19,Pooja Hegde,Zomato
+"They served expired paneer that smelled like poison. Two kids got stomach infection and high fever. We are filing an FIR with the police against the branch manager.",1,Mumbai Bandra West Lab,2026-10-19,Rajesh Singhania,Google Maps
+"Ye jagah loot macha rakhi hai. Dhoka diya bill me extra 800 charge karke aur waiter batameezi pe utar aaya. Chori chal rahi hai yahan.",1,Jaipur Malviya Nagar Flagship,2026-10-19,Harsh Vardhan,Google Maps
+"The soup was delicious, but the waiter was not polite and the restroom was not clean at all.",2,Gurugram CyberCity Premier,2026-10-20,Ananya Sharma,TripAdvisor
+"Manager threatened us when we caught the double billing fraud. Taking this to consumer forum and posting video on social media.",1,Bengaluru Indiranagar Center,2026-10-20,Karan Mehra,Google Maps
+"Khana ekdum bakwas tha aur staff bohot battameez tha. Ganda table and worst experience in Jaipur.",1,Jaipur Pratap Nagar Tech Hub,2026-10-20,Amit Kumar,Google Maps
+"The truffle risotto and drinks were delicious and fresh. However we waited 55 minutes for the table and turnaround was slow.",3,Mumbai Bandra West Lab,2026-10-20,Deepak Verma,Google Maps
+"Hands down the best branch! Polite staff, fast turnaround, and impeccable cleanliness. 10/10!",5,Jaipur Malviya Nagar Flagship,2026-10-20,Aditi Roy,Google Maps
+"Food was not hot, service was not helpful, and the bill was completely confusing.",1,Gurugram CyberCity Premier,2026-10-20,Sanya Merchant,Google Maps
+"Impeccably clean environment, courteous front desk reception, and seamless checkout with zero hidden fees.",5,Bengaluru Indiranagar Center,2026-10-20,Varun Chawla,Google Maps
+"We were never disappointed here until today. Waited 1 hour and cashier overcharged us on the invoice.",2,Mumbai Bandra West Lab,2026-10-20,Kavita Rao,Google Maps
+"",1,Jaipur Malviya Nagar Flagship,2026-10-20,Invalid Empty Text Row,Direct Upload
+"Malformed row with out-of-bounds rating for schema validation test",9,Gurugram CyberCity Premier,2026-10-20,Invalid Rating Test,Direct Upload
+"Malformed row with non-numeric rating for schema validation test",not_a_number,Mumbai Bandra West Lab,2026-10-20,Invalid Type Test,Direct Upload
